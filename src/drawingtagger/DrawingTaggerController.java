@@ -254,31 +254,32 @@ public class DrawingTaggerController implements Initializable {
     
     @FXML
     private void saveFile(ActionEvent event) {
-        tagLines();
-        
         File file = chooseFile(FileChooserType.SAVE);
         
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
             beforeLines.stream().forEach((line) -> {
                 writer.println(line);
             });
-            taggedLines.stream().map((taggedLine) -> {
-                Line line = taggedLine.line;
+            
+            for (TaggedLine taggedLine : taggedLines) {
                 writer.print(taggedLine.id + ",");
-                writer.print((int) line.getStartX() + ",");
-                writer.print((int) line.getEndX() + ",");
-                writer.print((int) line.getStartY() + ",");
-                writer.print((int) line.getEndY() + ",");
+                writer.print((int) taggedLine.line.getStartX() + ",");
+                writer.print((int) taggedLine.line.getEndX() + ",");
+                writer.print((int) taggedLine.line.getStartY() + ",");
+                writer.print((int) taggedLine.line.getEndY() + ",");
                 writer.print(taggedLine.timeStart + ",");
-                return taggedLine;
-            }).forEach((taggedLine) -> {
-                if (taggedLine.tag.equals("")) {
+                found: {
+                    for (TaggedRectangle taggedRectangle : taggedRectangles) {
+                        if (isInRectangle(taggedLine.line, taggedRectangle.rect)) {
+                            writer.print(taggedLine.timeEnd + ",");
+                            writer.println(taggedRectangle.tag);
+                            break found;
+                        }
+                    }
                     writer.println(taggedLine.timeEnd);
-                } else {
-                    writer.print(taggedLine.timeEnd + ",");
-                    writer.println(taggedLine.tag);
                 }
-            });
+            }
+            
             afterLines.stream().forEach((line) -> {
                 writer.println(line);
             });
@@ -287,18 +288,6 @@ public class DrawingTaggerController implements Initializable {
         } catch (IOException ex) {
             Logger.getLogger(DrawingTaggerController.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-    
-    private void tagLines() {
-        taggedLines.stream().forEach((taggedLine) -> {
-            taggedRectangles.stream().forEach((taggedRectangle) -> {
-                Line line = taggedLine.line;
-                Rectangle2D rect = taggedRectangle.rect;
-                if (isInRectangle(line, rect)) {
-                    taggedLine.setTag(taggedRectangle.tag);
-                }
-            });
-        });
     }
     
     private void showFinishedSaving() {
