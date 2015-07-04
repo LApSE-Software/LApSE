@@ -69,21 +69,21 @@ public class DrawingTaggerController implements Initializable {
     
     @FXML
     private void openFile(ActionEvent event) {
-        File file = chooseFile(true);
+        File file = chooseFile(FileChooserType.OPEN);
         loadFile(file);
         findMinimumSize();
         loadCanvas();
     }
     
-    private File chooseFile(boolean isOpen) {
+    private File chooseFile(FileChooserType type) {
         final FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text Files", "*.txt"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
-        File file;
-        if (isOpen) {
+        File file = null;
+        if (type == FileChooserType.OPEN) {
             fileChooser.setTitle("Open...");
             file = fileChooser.showOpenDialog(mainStage);
-        } else {
+        } else if (type == FileChooserType.SAVE) {
             fileChooser.setTitle("Save...");
             file = fileChooser.showSaveDialog(mainStage);
         }
@@ -264,7 +264,7 @@ public class DrawingTaggerController implements Initializable {
     private void saveFile(ActionEvent event) {
         tagLines();
         
-        File file = chooseFile(false);
+        File file = chooseFile(FileChooserType.SAVE);
         
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
             beforeLines.stream().forEach((line) -> {
