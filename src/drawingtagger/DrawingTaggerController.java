@@ -179,44 +179,37 @@ public class DrawingTaggerController implements Initializable {
             gc.drawImage(image, 0, 0);
             gc.setStroke(Color.RED);
             
-            int x, y, width, height;
-            if (event.getX() > startX) {
-                x = startX;
-                width = (int) (event.getX() - startX);
-            } else {
-                x = (int) event.getX();
-                width = (int) (startX - event.getX());
-            }
-            if (event.getY() > startY) {
-                y = startY;
-                height = (int) (event.getY() - startY);
-            } else {
-                y = (int) event.getY();
-                height = (int) (startY - event.getY());
-            }
-            gc.strokeRect(x, y, width, height);
+            Rectangle2D rect = createRectangleFromMouse(event);
+            gc.strokeRect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
         });
         canvas.setOnMouseReleased((MouseEvent event) -> {
             gc.setStroke(Color.RED);
             
-            int x, y, width, height;
-            if (event.getX() > startX) {
-                x = startX;
-                width = (int) (event.getX() - startX);
-            } else {
-                x = (int) event.getX();
-                width = (int) (startX - event.getX());
-            }
-            if (event.getY() > startY) {
-                y = startY;
-                height = (int) (event.getY() - startY);
-            } else {
-                y = (int) event.getY();
-                height = (int) (startY - event.getY());
-            }
-            gc.strokeRect(x, y, width, height);
-            openTagging(new Rectangle2D(x, y, width, height));
+            Rectangle2D rect = createRectangleFromMouse(event);
+            gc.strokeRect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
+            
+            openTagging(rect);
         });
+    }
+    
+    private Rectangle2D createRectangleFromMouse(MouseEvent event) {
+        int x, y, width, height;
+        if (event.getX() > startX) {
+            x = startX;
+            width = (int) (event.getX() - startX);
+        } else {
+            x = (int) event.getX();
+            width = (int) (startX - event.getX());
+        }
+        if (event.getY() > startY) {
+            y = startY;
+            height = (int) (event.getY() - startY);
+        } else {
+            y = (int) event.getY();
+            height = (int) (startY - event.getY());
+        }
+        
+        return new Rectangle2D(x, y, width, height);
     }
     
     private void draw() {
