@@ -177,15 +177,14 @@ public class DrawingTaggerController implements Initializable {
         });
         canvas.setOnMouseDragged((MouseEvent event) -> {
             gc.drawImage(image, 0, 0);
-            gc.setStroke(Color.RED);
             
             Rectangle2D rect = createRectangleFromMouse(event);
+            gc.setStroke(Color.RED);
             gc.strokeRect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
         });
         canvas.setOnMouseReleased((MouseEvent event) -> {
-            gc.setStroke(Color.RED);
-            
             Rectangle2D rect = createRectangleFromMouse(event);
+            gc.setStroke(Color.RED);
             gc.strokeRect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
             
             openTagging(rect);
