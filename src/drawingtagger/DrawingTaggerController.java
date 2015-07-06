@@ -13,6 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -63,6 +64,8 @@ public class DrawingTaggerController implements Initializable {
     
     private ObservableList<TaggedLine> taggedLines;
     private ObservableList<TaggedRectangle> taggedRectangles;
+    private ObservableMap<String, ObservableList<String>> tags;
+    private ObservableList<String> drawingTypeList;
     private int minWidth, minHeight;
     private int startX, startY;
     private WritableImage image;
@@ -104,7 +107,7 @@ public class DrawingTaggerController implements Initializable {
                 boolean foundLine = false;
                 
                 while ((temp = reader.readLine()) != null) {
-                    if (temp.equals("<<Coordinates>>")) {
+                    if (temp.equals("<<Extracted_Lines>>")) {
                         foundLine = true;
                         beforeLines.add(temp);
                         continue;
@@ -126,6 +129,8 @@ public class DrawingTaggerController implements Initializable {
                 while ((temp = reader.readLine()) != null) {
                     afterLines.add(temp);
                 }
+                
+                mainStage.setTitle(file.getPath() + " - " + DrawingTagger.TITLE);
             } catch (IOException ex) {
                 Logger.getLogger(DrawingTaggerController.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -246,7 +251,9 @@ public class DrawingTaggerController implements Initializable {
             controller.setSelectedImage(canvas, rect);
             controller.setBackupStates(backupStates);
             controller.setRectangleList(taggedRectangles);
+            controller.setTags(tags, drawingTypeList);
             controller.loadImage();
+            controller.loadDrawingType();
         } catch (IOException ex) {
             Logger.getLogger(DrawingTaggerController.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -322,8 +329,32 @@ public class DrawingTaggerController implements Initializable {
         backupStates = FXCollections.observableArrayList();
         taggedLines = FXCollections.observableArrayList();
         taggedRectangles = FXCollections.observableArrayList();
+        tags = FXCollections.observableHashMap();
+        drawingTypeList = FXCollections.observableArrayList();
         minWidth = 0;
         minHeight = 0;
+        loadTags("tags.txt");
+    }
+    
+    private void loadTags(String fileName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+            String temp;
+            String currentType = null;
+            while ((temp = reader.readLine()) != null) {
+                if (temp.startsWith("#")) {
+                    currentType = temp.substring(1);
+                    drawingTypeList.add(currentType);
+                    tags.put(currentType, FXCollections.observableArrayList());
+                    continue;
+                }
+                if (currentType != null && !temp.isEmpty()) {
+                    ObservableList<String> tagList = tags.get(currentType);
+                    tagList.add(temp);
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(DrawingTaggerController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public void setMainStage(Stage mainStage) {

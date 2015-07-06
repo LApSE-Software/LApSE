@@ -17,6 +17,8 @@ import javafx.stage.Stage;
  */
 public class DrawingTagger extends Application {
     
+    public static final String TITLE = "Drawing Tagger";
+    
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("DrawingTagger.fxml"));
@@ -24,7 +26,7 @@ public class DrawingTagger extends Application {
         
         Scene scene = new Scene(root);
         
-        stage.setTitle("Drawing Tagger");
+        stage.setTitle(TITLE);
         stage.setMaximized(true);
         stage.setScene(scene);
         stage.show();
