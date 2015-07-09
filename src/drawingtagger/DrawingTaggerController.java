@@ -19,6 +19,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Group;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -30,6 +31,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -54,8 +56,9 @@ public class DrawingTaggerController implements Initializable {
     private AnchorPane drawingPane;
     
     private Stage mainStage;
+    private Group group;
     private Canvas canvas;
-    private Canvas transparent;
+    private Rectangle rect;
     private GraphicsContext gc;
     
     private ObservableList<String> beforeLines;
@@ -67,7 +70,7 @@ public class DrawingTaggerController implements Initializable {
     private ObservableMap<String, ObservableList<String>> tags;
     private ObservableList<String> drawingTypeList;
     private int minWidth, minHeight;
-    private int startX, startY;
+    private double startX, startY;
     private WritableImage image;
     
     @FXML
@@ -162,9 +165,11 @@ public class DrawingTaggerController implements Initializable {
     }
     
     private void loadCanvas() {
+        group = new Group();
         canvas = new Canvas(minWidth + GAP, minHeight + GAP);
+        group.getChildren().add(canvas);
         drawingPane.getChildren().clear();
-        drawingPane.getChildren().add(canvas);
+        drawingPane.getChildren().add(group);
         
         gc = canvas.getGraphicsContext2D();
         image = new WritableImage((int) canvas.getWidth(), (int) canvas.getHeight());
@@ -176,45 +181,83 @@ public class DrawingTaggerController implements Initializable {
         addBackupState();
         
         canvas.setOnMousePressed((MouseEvent event) -> {
-            startX = (int) event.getX();
-            startY = (int) event.getY();
+            group.getChildren().add(rect);
+            startX = event.getX();
+            startY = event.getY();
+            rect.setX(event.getX());
+            rect.setY(event.getY());
+            rect.setWidth(0);
+            rect.setHeight(0);
             canvas.snapshot(null, image);
         });
         canvas.setOnMouseDragged((MouseEvent event) -> {
-            gc.drawImage(image, 0, 0);
-            
-            Rectangle2D rect = createRectangleFromMouse(event);
-            gc.setStroke(Color.RED);
-            gc.strokeRect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
+            double x, y, width, height;
+            if (event.getX() > startX) {
+                x = startX;
+                if (event.getX() > canvas.getWidth()) {
+                    width = canvas.getWidth() - startX - 1.0;
+                } else {
+                    width = event.getX() - startX;
+                }
+            } else {
+                if (event.getX() < 0.0) {
+                    x = 1.0;
+                    width = startX;
+                } else {
+                    x = event.getX();
+                    width = startX - event.getX();
+                }
+            }
+            if (event.getY() > startY) {
+                y = startY;
+                if (event.getY() > canvas.getHeight()) {
+                    height = canvas.getHeight() - startY - 1.0;
+                } else {
+                    height = event.getY() - startY;
+                }
+            } else {
+                if (event.getY() < 0.0) {
+                    y = 1.0;
+                    height = startY;
+                } else {
+                    y = event.getY();
+                    height = startY - event.getY();
+                }
+            }
+
+            rect.setX(x);
+            rect.setY(y);
+            rect.setWidth(width);
+            rect.setHeight(height);
         });
         canvas.setOnMouseReleased((MouseEvent event) -> {
-            Rectangle2D rect = createRectangleFromMouse(event);
-            gc.setStroke(Color.RED);
-            gc.strokeRect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
-            
             openTagging(rect);
+            
+            gc.setStroke(Color.RED);
+            gc.strokeRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
+            group.getChildren().remove(rect);
         });
     }
     
-    private Rectangle2D createRectangleFromMouse(MouseEvent event) {
-        int x, y, width, height;
-        if (event.getX() > startX) {
-            x = startX;
-            width = (int) (event.getX() - startX);
-        } else {
-            x = (int) event.getX();
-            width = (int) (startX - event.getX());
-        }
-        if (event.getY() > startY) {
-            y = startY;
-            height = (int) (event.getY() - startY);
-        } else {
-            y = (int) event.getY();
-            height = (int) (startY - event.getY());
-        }
-        
-        return new Rectangle2D(x, y, width, height);
-    }
+//    private Rectangle2D createRectangleFromMouse(MouseEvent event) {
+//        int x, y, width, height;
+//        if (event.getX() > startX) {
+//            x = startX;
+//            width = (int) (event.getX() - startX);
+//        } else {
+//            x = (int) event.getX();
+//            width = (int) (startX - event.getX());
+//        }
+//        if (event.getY() > startY) {
+//            y = startY;
+//            height = (int) (event.getY() - startY);
+//        } else {
+//            y = (int) event.getY();
+//            height = (int) (startY - event.getY());
+//        }
+//        
+//        return new Rectangle2D(x, y, width, height);
+//    }
     
     private void draw() {
         gc.setStroke(Color.BLACK);
@@ -228,11 +271,11 @@ public class DrawingTaggerController implements Initializable {
         WritableImage wi = new WritableImage((int) canvas.getWidth(), (int) canvas.getHeight());
         canvas.snapshot(null, wi);
         backupStates.add(wi);
-        Rectangle2D rect = new Rectangle2D(0, 0, 0, 0);
-        taggedRectangles.add(new TaggedRectangle(rect, "dummy"));
+        Rectangle2D rectangle2d = new Rectangle2D(0, 0, 0, 0);
+        taggedRectangles.add(new TaggedRectangle(rectangle2d, "dummy"));
     }
     
-    private void openTagging(Rectangle2D rect) {
+    private void openTagging(Rectangle rect) {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("Tagging.fxml"));
         try {
             Parent root = loader.load();
@@ -331,6 +374,10 @@ public class DrawingTaggerController implements Initializable {
         taggedRectangles = FXCollections.observableArrayList();
         tags = FXCollections.observableHashMap();
         drawingTypeList = FXCollections.observableArrayList();
+        rect = new Rectangle();
+        rect.setFill(null);
+        rect.getStrokeDashArray().addAll(5.0);
+        rect.setStroke(Color.RED);
         minWidth = 0;
         minHeight = 0;
         loadTags("tags.txt");

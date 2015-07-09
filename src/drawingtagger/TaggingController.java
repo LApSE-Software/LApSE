@@ -15,6 +15,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 /**
@@ -90,10 +91,10 @@ public class TaggingController implements Initializable {
         this.gc = gc;
     }
     
-    public void setSelectedImage(Canvas canvas, Rectangle2D rect) {
+    public void setSelectedImage(Canvas canvas, Rectangle rectangle) {
         this.mainCanvas = canvas;
-        this.rect = rect;
-        image = new WritableImage((int) rect.getWidth(), (int) rect.getHeight());
+        this.rect = new Rectangle2D(rectangle.getX(), rectangle.getY(), rectangle.getWidth(), rectangle.getHeight());
+        image = new WritableImage((int) rectangle.getWidth(), (int) rectangle.getHeight());
         SnapshotParameters param = new SnapshotParameters();
         param.setViewport(rect);
         canvas.snapshot(param, image);
