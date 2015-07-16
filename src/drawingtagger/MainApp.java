@@ -53,9 +53,6 @@ public class MainApp extends Application {
         drawingTypeList = FXCollections.observableArrayList();
         taggedRectangles = FXCollections.observableArrayList();
         backupStates = FXCollections.observableArrayList();
-        backupStates.addListener((ListChangeListener.Change<? extends WritableImage> c) -> {
-            
-        });
         loadTags("tags.txt");
     }
     

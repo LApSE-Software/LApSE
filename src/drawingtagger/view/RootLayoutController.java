@@ -4,6 +4,7 @@ import drawingtagger.util.FileChooserType;
 import drawingtagger.MainApp;
 import drawingtagger.model.TaggedLine;
 import drawingtagger.model.TaggedRectangle;
+import drawingtagger.util.GT;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -25,6 +26,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -37,6 +39,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
@@ -132,6 +135,7 @@ public class RootLayoutController implements Initializable {
     private void loadFile(File file) {
         if (file != null) {
             mainApp.clearData();
+            drawingSequenceGroup.getChildren().clear();
             lineLabelGroup.getChildren().clear();
             
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -153,9 +157,10 @@ public class RootLayoutController implements Initializable {
                         
                         TaggedLine taggedLine = loadLineFromString(temp);
                         mainApp.getTaggedLines().add(taggedLine);
+                        Point2D ptA = new Point2D(taggedLine.line.getStartX(), taggedLine.line.getStartY());
+                        Point2D midPoint = ptA.midpoint(taggedLine.line.getEndX(), taggedLine.line.getEndY());
+                        loadSequencePoint(midPoint);
                         if (!taggedLine.tag.isEmpty()) {  // if tag exists
-                            Point2D ptA = new Point2D(taggedLine.line.getStartX(), taggedLine.line.getStartY());
-                            Point2D midPoint = ptA.midpoint(taggedLine.line.getEndX(), taggedLine.line.getEndY());
                             Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
                             text.setFill(Color.RED);
                             lineLabelGroup.getChildren().add(text);
@@ -164,6 +169,8 @@ public class RootLayoutController implements Initializable {
                         mainApp.getBeforeLines().add(temp);
                     }
                 }
+                loadSequencePoint(null);    // remove last curve
+                makeCurves();
                 
                 while ((temp = reader.readLine()) != null) {
                     mainApp.getAfterLines().add(temp);
@@ -173,6 +180,41 @@ public class RootLayoutController implements Initializable {
             } catch (IOException ex) {
                 Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
             }
+        }
+    }
+    
+    /**
+     * Load cubic curve from two mid-points.
+     * @param pt 
+     */
+    private void loadSequencePoint(Point2D pt) {
+        ObservableList<Node> curves = drawingSequenceGroup.getChildren();
+        if (curves.isEmpty()) {
+            CubicCurve curve = new CubicCurve();
+            curve.setStartX(pt.getX());
+            curve.setStartY(pt.getY());
+            curve.setControlX1(pt.getX());
+            curve.setControlY1(pt.getY());
+            curve.setFill(null);
+            curve.setStroke(Color.GREEN);
+            curves.add(curve);
+        } else if (pt != null) {
+            CubicCurve curveA = (CubicCurve) curves.get(curves.size() - 1);     // get last curve
+            curveA.setEndX(pt.getX());
+            curveA.setEndY(pt.getY());
+            curveA.setControlX2(pt.getX());
+            curveA.setControlY2(pt.getY());
+            
+            CubicCurve curveB = new CubicCurve();
+            curveB.setStartX(pt.getX());
+            curveB.setStartY(pt.getY());
+            curveB.setControlX1(pt.getX());
+            curveB.setControlY1(pt.getY());
+            curveB.setFill(null);
+            curveB.setStroke(Color.GREEN);
+            curves.add(curveB);
+        } else {    // if null
+            curves.remove(curves.size() - 1);   // remove last curve
         }
     }
     
@@ -224,6 +266,9 @@ public class RootLayoutController implements Initializable {
         drawingPane.getChildren().add(mainGroup);
         if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
             mainGroup.getChildren().add(lineLabelGroup);
+        }
+        if (drawingSequenceMenu.selectedProperty().getValue()) {    // if drawingSequenceMenu is selected
+            mainGroup.getChildren().add(drawingSequenceGroup);
         }
         
         gc = canvas.getGraphicsContext2D();
@@ -427,6 +472,68 @@ public class RootLayoutController implements Initializable {
             backupStates.remove(backupStates.size() - 1);
             taggedRectangles.remove(taggedRectangles.size() - 1);
             gc.drawImage(backupStates.get(backupStates.size() - 1), 0, 0);
+        }
+    }
+    
+    /**
+     * Make curves from the drawing sequence.
+     */
+    private void makeCurves() {
+        ObservableList<Node> curves = drawingSequenceGroup.getChildren();
+        if (curves.size() < 3) {
+            return;
+        }
+        double ratio = 0.3;
+        CubicCurve line1 = (CubicCurve) curves.get(0),
+                line2 = (CubicCurve) curves.get(1),
+                line3;
+        double angle12 = GT.angle(line1, line2);
+        double angle23;
+        double theta12 = (Math.PI - Math.abs(angle12)) / 2;
+        double theta23;
+        
+        GT.scale(line1, ratio);
+        if (angle12 < 0) {
+            GT.rotate(line1, -theta12, false);
+        } else {
+            GT.rotate(line1, theta12, false);
+        }
+        
+        for (int i = 0; i < curves.size() - 2; i++) {
+            line1 = (CubicCurve) curves.get(i);
+            line2 = (CubicCurve) curves.get(i + 1);
+            line3 = (CubicCurve) curves.get(i + 2);
+            
+            angle12 = GT.angle(line1, line2);
+            angle23 = GT.angle(line2, line3);
+            theta12 = (Math.PI - Math.abs(angle12)) / 2;
+            theta23 = (Math.PI - Math.abs(angle23)) / 2;
+            
+            GT.scale(line2, ratio);
+            if (angle12 < 0) {
+                GT.rotate(line2, theta12, true);
+            } else {
+                GT.rotate(line2, -theta12, true);
+            }
+            
+            if (angle23 < 0) {
+                GT.rotate(line2, -theta23, false);
+            } else {
+                GT.rotate(line2, theta23, false);
+            }
+        }
+        
+        line2 = (CubicCurve) curves.get(curves.size() - 2);
+        line3 = (CubicCurve) curves.get(curves.size() - 1);
+        
+        angle23 = GT.angle(line2, line3);
+        theta23 = (Math.PI - Math.abs(angle23)) / 2;
+        
+        GT.scale(line3, ratio);
+        if (angle23 < 0) {
+            GT.rotate(line3, theta23, true);
+        } else {
+            GT.rotate(line3, -theta23, true);
         }
     }
     
