@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.input.*?>
 <?import java.lang.*?>
 <?import java.util.*?>
 <?import javafx.scene.control.*?>
@@ -20,9 +21,18 @@
         </Menu>
         <Menu mnemonicParsing="false" text="Edit">
           <items>
-            <MenuItem mnemonicParsing="false" onAction="#undo" text="Undo" />
+            <MenuItem fx:id="undoMenu" disable="true" mnemonicParsing="false" onAction="#undo" text="Undo">
+                     <accelerator>
+                        <KeyCodeCombination alt="UP" code="Z" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator></MenuItem>
           </items>
         </Menu>
+            <Menu mnemonicParsing="false" text="View">
+              <items>
+                  <CheckMenuItem fx:id="drawingSequenceMenu" mnemonicParsing="false" text="Drawing Sequence" />
+                  <CheckMenuItem fx:id="lineLabelMenu" mnemonicParsing="false" text="Line Label" />
+              </items>
+            </Menu>
         <Menu mnemonicParsing="false" text="Help">
           <items>
             <MenuItem mnemonicParsing="false" text="About DrawingTagger" />

@@ -15,11 +15,14 @@ import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Parent;
@@ -28,12 +31,15 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.MenuItem;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -51,14 +57,24 @@ public class RootLayoutController implements Initializable {
     private static final int Y_END = 4;
     private static final int TIME_START = 5;
     private static final int TIME_END = 6;
+    private static final int NUMBER_OF_TOKENS = TIME_END + 1;
+    private static final int TAG = NUMBER_OF_TOKENS;
     
     private static final int GAP = 20;
     
     @FXML
     private AnchorPane drawingPane;
+    @FXML
+    private MenuItem undoMenu;
+    @FXML
+    private CheckMenuItem drawingSequenceMenu;
+    @FXML
+    private CheckMenuItem lineLabelMenu;
     
     private MainApp mainApp;
-    private Group group;
+    private Group mainGroup;
+    private Group lineLabelGroup;
+    private Group drawingSequenceGroup;
     private Canvas canvas;
     private Rectangle rect;
     private GraphicsContext gc;
@@ -116,6 +132,7 @@ public class RootLayoutController implements Initializable {
     private void loadFile(File file) {
         if (file != null) {
             mainApp.clearData();
+            lineLabelGroup.getChildren().clear();
             
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String temp;
@@ -134,8 +151,15 @@ public class RootLayoutController implements Initializable {
                             break;
                         }
                         
-                        TaggedLine line = loadLineFromString(temp);
-                        mainApp.getTaggedLines().add(line);
+                        TaggedLine taggedLine = loadLineFromString(temp);
+                        mainApp.getTaggedLines().add(taggedLine);
+                        if (!taggedLine.tag.isEmpty()) {  // if tag exists
+                            Point2D ptA = new Point2D(taggedLine.line.getStartX(), taggedLine.line.getStartY());
+                            Point2D midPoint = ptA.midpoint(taggedLine.line.getEndX(), taggedLine.line.getEndY());
+                            Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
+                            text.setFill(Color.RED);
+                            lineLabelGroup.getChildren().add(text);
+                        }
                     } else {
                         mainApp.getBeforeLines().add(temp);
                     }
@@ -166,9 +190,11 @@ public class RootLayoutController implements Initializable {
         int yEnd = Integer.parseInt(value[Y_END]);
         long startTime = Long.parseLong(value[TIME_START]);
         long endTime = Long.parseLong(value[TIME_END]);
+        // if there is extra token (tag)
+        String tag = (value.length == NUMBER_OF_TOKENS + 1) ? value[TAG] : "";
         
         Line line = new Line(xStart, yStart, xEnd, yEnd);
-        return new TaggedLine(id, line, startTime, endTime);
+        return new TaggedLine(id, line, startTime, endTime, tag);
     }
     
     /**
@@ -192,10 +218,13 @@ public class RootLayoutController implements Initializable {
     private void loadCanvas() {
         canvas.setWidth(minWidth + GAP);
         canvas.setHeight(minHeight + GAP);
-        group.getChildren().clear();
-        group.getChildren().add(canvas);
+        mainGroup.getChildren().clear();
+        mainGroup.getChildren().add(canvas);
         drawingPane.getChildren().clear();
-        drawingPane.getChildren().add(group);
+        drawingPane.getChildren().add(mainGroup);
+        if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
+            mainGroup.getChildren().add(lineLabelGroup);
+        }
         
         gc = canvas.getGraphicsContext2D();
         image = new WritableImage((int) canvas.getWidth(), (int) canvas.getHeight());
@@ -207,7 +236,7 @@ public class RootLayoutController implements Initializable {
         addBackupState();
         
         canvas.setOnMousePressed((MouseEvent event) -> {
-            group.getChildren().add(rect);
+            mainGroup.getChildren().add(rect);
             startX = event.getX();
             startY = event.getY();
             rect.setX(event.getX());
@@ -263,7 +292,7 @@ public class RootLayoutController implements Initializable {
                 gc.setStroke(Color.RED);
                 gc.strokeRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
             }
-            group.getChildren().remove(rect);
+            mainGroup.getChildren().remove(rect);
         });
     }
     
@@ -403,7 +432,9 @@ public class RootLayoutController implements Initializable {
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        group = new Group();
+        mainGroup = new Group();
+        lineLabelGroup = new Group();
+        drawingSequenceGroup = new Group();
         canvas = new Canvas();
         rect = new Rectangle();
         rect.setFill(null);
@@ -411,14 +442,44 @@ public class RootLayoutController implements Initializable {
         rect.setStroke(Color.RED);
         minWidth = 0;
         minHeight = 0;
+        initCheckMenuItem();
     }
     
     /**
-     * Called by main application to make a reference back to itself.
+     * Initialize ChangeListener for Line Label menu and Drawing Sequence menu.
+     */
+    private void initCheckMenuItem() {
+        drawingSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+            if (isSelected) {
+                mainGroup.getChildren().add(drawingSequenceGroup);
+            } else {
+                mainGroup.getChildren().remove(drawingSequenceGroup);
+            }
+        });
+        lineLabelMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+            if (isSelected) {
+                mainGroup.getChildren().add(lineLabelGroup);
+            } else {
+                mainGroup.getChildren().remove(lineLabelGroup);
+            }
+        });
+    }
+    
+    /**
+     * Called by main application to make a reference back to itself. At the
+     * same time initialize backup states listener to only enable undo button
+     * when there are backup states.
      * @param mainApp
      */
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
+        mainApp.getBackupStates().addListener((ListChangeListener.Change<? extends WritableImage> c) -> {
+            if (mainApp.getBackupStates().size() > 1) {
+                undoMenu.setDisable(false);
+            } else {
+                undoMenu.setDisable(true);
+            }
+        });
     }
     
 }

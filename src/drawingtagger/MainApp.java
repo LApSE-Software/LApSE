@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.fxml.FXMLLoader;
@@ -52,6 +53,9 @@ public class MainApp extends Application {
         drawingTypeList = FXCollections.observableArrayList();
         taggedRectangles = FXCollections.observableArrayList();
         backupStates = FXCollections.observableArrayList();
+        backupStates.addListener((ListChangeListener.Change<? extends WritableImage> c) -> {
+            
+        });
         loadTags("tags.txt");
     }
     
