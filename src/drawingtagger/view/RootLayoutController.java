@@ -356,8 +356,7 @@ public class RootLayoutController implements Initializable {
      * Add backup state for canvas to roll to on undo.
      */
     private void addBackupState() {
-        WritableImage wi = new WritableImage((int) canvas.getWidth(), (int) canvas.getHeight());
-        canvas.snapshot(null, wi);
+        WritableImage wi = canvas.snapshot(null, null);
         mainApp.getBackupStates().add(wi);
         Rectangle2D rectangle2d = new Rectangle2D(0, 0, 0, 0);
         mainApp.getTaggedRectangles().add(new TaggedRectangle(rectangle2d, "dummy"));
