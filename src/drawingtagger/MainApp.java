@@ -15,13 +15,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.WritableImage;
 import javafx.stage.Stage;
 
 /**
@@ -40,7 +38,6 @@ public class MainApp extends Application {
     private final ObservableMap<String, ObservableList<String>> tags;
     private final ObservableList<String> drawingTypeList;
     private final ObservableList<TaggedRectangle> taggedRectangles;
-    private final ObservableList<WritableImage> backupStates;
     
     /**
      * Constructor.
@@ -52,7 +49,6 @@ public class MainApp extends Application {
         tags = FXCollections.observableHashMap();
         drawingTypeList = FXCollections.observableArrayList();
         taggedRectangles = FXCollections.observableArrayList();
-        backupStates = FXCollections.observableArrayList();
         loadTags("tags.txt");
     }
     
@@ -65,7 +61,6 @@ public class MainApp extends Application {
         afterLines.clear();
         taggedLines.clear();
         taggedRectangles.clear();
-        backupStates.clear();
     }
     
     /**
@@ -115,14 +110,6 @@ public class MainApp extends Application {
      */
     public ObservableList<TaggedRectangle> getTaggedRectangles() {
         return taggedRectangles;
-    }
-    
-    /**
-     * Return the list of backup states of canvas.
-     * @return backupStates
-     */
-    public ObservableList<WritableImage> getBackupStates() {
-        return backupStates;
     }
     
     /**

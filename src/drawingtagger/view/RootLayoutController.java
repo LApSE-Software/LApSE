@@ -74,7 +74,7 @@ public class RootLayoutController implements Initializable {
     @FXML
     private CheckMenuItem lineLabelMenu;
     
-    private MainApp mainApp;
+    public MainApp mainApp;
     private Group mainGroup;
     private Group lineLabelGroup;
     private Group drawingSequenceGroup;
@@ -137,6 +137,7 @@ public class RootLayoutController implements Initializable {
             mainApp.clearData();
             drawingSequenceGroup.getChildren().clear();
             lineLabelGroup.getChildren().clear();
+            Group lineLabelFromFile = new Group();
             
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String temp;
@@ -157,18 +158,19 @@ public class RootLayoutController implements Initializable {
                         
                         TaggedLine taggedLine = loadLineFromString(temp);
                         mainApp.getTaggedLines().add(taggedLine);
-                        Point2D ptA = new Point2D(taggedLine.line.getStartX(), taggedLine.line.getStartY());
-                        Point2D midPoint = ptA.midpoint(taggedLine.line.getEndX(), taggedLine.line.getEndY());
+                        Point2D ptA = new Point2D(taggedLine.getStartX(), taggedLine.getStartY());
+                        Point2D midPoint = ptA.midpoint(taggedLine.getEndX(), taggedLine.getEndY());
                         loadSequencePoint(midPoint);
                         if (!taggedLine.tag.isEmpty()) {  // if tag exists
                             Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
                             text.setFill(Color.RED);
-                            lineLabelGroup.getChildren().add(text);
+                            lineLabelFromFile.getChildren().add(text);
                         }
                     } else {
                         mainApp.getBeforeLines().add(temp);
                     }
                 }
+                lineLabelGroup.getChildren().add(lineLabelFromFile);
                 loadSequencePoint(null);    // remove last curve
                 makeCurves();
                 
@@ -246,8 +248,8 @@ public class RootLayoutController implements Initializable {
         minWidth = 0;
         minHeight = 0;
         mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
-            int xPref = (int) Math.max(taggedLine.line.getStartX(), taggedLine.line.getEndX());
-            int yPref = (int) Math.max(taggedLine.line.getStartY(), taggedLine.line.getEndY());
+            int xPref = (int) Math.max(taggedLine.getStartX(), taggedLine.getEndX());
+            int yPref = (int) Math.max(taggedLine.getStartY(), taggedLine.getEndY());
             
             minWidth = Math.max(minWidth, xPref);
             minHeight = Math.max(minHeight, yPref);
@@ -278,7 +280,6 @@ public class RootLayoutController implements Initializable {
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         
         draw();
-        addBackupState();
         
         canvas.setOnMousePressed((MouseEvent event) -> {
             mainGroup.getChildren().add(rect);
@@ -333,9 +334,6 @@ public class RootLayoutController implements Initializable {
         canvas.setOnMouseReleased((MouseEvent event) -> {
             if (rect.getWidth() != 0 && rect.getHeight() != 0) {
                 openTagging(rect);
-
-                gc.setStroke(Color.RED);
-                gc.strokeRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
             }
             mainGroup.getChildren().remove(rect);
         });
@@ -347,19 +345,9 @@ public class RootLayoutController implements Initializable {
     private void draw() {
         gc.setStroke(Color.BLACK);
         mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
-            gc.strokeLine(taggedLine.line.getStartX(), taggedLine.line.getStartY(),
-                    taggedLine.line.getEndX(), taggedLine.line.getEndY());
+            gc.strokeLine(taggedLine.getStartX(), taggedLine.getStartY(),
+                    taggedLine.getEndX(), taggedLine.getEndY());
         });
-    }
-    
-    /**
-     * Add backup state for canvas to roll to on undo.
-     */
-    private void addBackupState() {
-        WritableImage wi = canvas.snapshot(null, null);
-        mainApp.getBackupStates().add(wi);
-        Rectangle2D rectangle2d = new Rectangle2D(0, 0, 0, 0);
-        mainApp.getTaggedRectangles().add(new TaggedRectangle(rectangle2d, "dummy"));
     }
     
     /**
@@ -379,14 +367,30 @@ public class RootLayoutController implements Initializable {
             stage.setResizable(false);
             
             TaggingController controller = loader.getController();
-            controller.setMainApp(mainApp);
+            controller.setRootLayout(this);
             controller.setTaggingStage(stage);
-            controller.setSelectedImage(canvas, rect);
+            controller.setSelectedImage(rect);
             
             stage.show();
         } catch (IOException ex) {
             Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    /**
+     * Return main canvas.
+     * @return 
+     */
+    public Canvas getMainCanvas() {
+        return canvas;
+    }
+    
+    /**
+     * Return a list of line label groups.
+     * @return 
+     */
+    public ObservableList<Node> getLineLabelGroup() {
+        return lineLabelGroup.getChildren();
     }
     
     /**
@@ -405,20 +409,25 @@ public class RootLayoutController implements Initializable {
             
             for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
                 writer.print(taggedLine.id + ",");
-                writer.print((int) taggedLine.line.getStartX() + ",");
-                writer.print((int) taggedLine.line.getEndX() + ",");
-                writer.print((int) taggedLine.line.getStartY() + ",");
-                writer.print((int) taggedLine.line.getEndY() + ",");
+                writer.print((int) taggedLine.getStartX() + ",");
+                writer.print((int) taggedLine.getEndX() + ",");
+                writer.print((int) taggedLine.getStartY() + ",");
+                writer.print((int) taggedLine.getEndY() + ",");
                 writer.print(taggedLine.timeStart + ",");
-                found: {
-                    for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
-                        if (isInRectangle(taggedLine.line, taggedRectangle.rect)) {
-                            writer.print(taggedLine.timeEnd + ",");
-                            writer.println(taggedRectangle.tag);
-                            break found;
+                if (taggedLine.tag.isEmpty()) {
+                    found: {
+                        for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
+                            if (isInRectangle(taggedLine.asLine(), taggedRectangle.rect)) {
+                                writer.print(taggedLine.timeEnd + ",");
+                                writer.println(taggedRectangle.tag);
+                                break found;
+                            }
                         }
+                        writer.println(taggedLine.timeEnd);
                     }
-                    writer.println(taggedLine.timeEnd);
+                } else {
+                    writer.print(taggedLine.timeEnd + ",");
+                    writer.println(taggedLine.tag);
                 }
             }
             
@@ -464,14 +473,25 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void undo(ActionEvent event) {
-        ObservableList<WritableImage> backupStates = mainApp.getBackupStates();
+        ObservableList<Node> lineLabels = lineLabelGroup.getChildren();
         ObservableList<TaggedRectangle> taggedRectangles = mainApp.getTaggedRectangles();
         
-        if (backupStates.size() > 1) {
-            backupStates.remove(backupStates.size() - 1);
+        if (lineLabels.size() > 1) {
+            lineLabels.remove(lineLabels.size() - 1);
             taggedRectangles.remove(taggedRectangles.size() - 1);
-            gc.drawImage(backupStates.get(backupStates.size() - 1), 0, 0);
         }
+    }
+    
+    /**
+     * Clear all tags including tags from file.
+     * @param event 
+     */
+    @FXML
+    private void clearTags(ActionEvent event) {
+        mainApp.getTaggedLines().stream().filter((taggedLine) -> (!taggedLine.tag.isEmpty())).forEach((taggedLine) -> {
+            taggedLine.tag = "";
+        });
+        lineLabelGroup.getChildren().clear();
     }
     
     /**
@@ -483,57 +503,66 @@ public class RootLayoutController implements Initializable {
             return;
         }
         double ratio = 0.3;
-        CubicCurve line1 = (CubicCurve) curves.get(0),
-                line2 = (CubicCurve) curves.get(1),
-                line3;
-        double angle12 = GT.angle(line1, line2);
+        CubicCurve curve1 = (CubicCurve) curves.get(0),
+                curve2 = (CubicCurve) curves.get(1),
+                curve3;
+        double angle12 = GT.angle(curve1, curve2);
         double angle23;
         double theta12 = (Math.PI - Math.abs(angle12)) / 2;
         double theta23;
         
-        GT.scale(line1, ratio);
+        GT.scale(curve1, ratio);
         if (angle12 < 0) {
-            GT.rotate(line1, -theta12, false);
+            GT.rotate(curve1, -theta12, false);
         } else {
-            GT.rotate(line1, theta12, false);
+            GT.rotate(curve1, theta12, false);
         }
         
         for (int i = 0; i < curves.size() - 2; i++) {
-            line1 = (CubicCurve) curves.get(i);
-            line2 = (CubicCurve) curves.get(i + 1);
-            line3 = (CubicCurve) curves.get(i + 2);
+            curve1 = (CubicCurve) curves.get(i);
+            curve2 = (CubicCurve) curves.get(i + 1);
+            curve3 = (CubicCurve) curves.get(i + 2);
             
-            angle12 = GT.angle(line1, line2);
-            angle23 = GT.angle(line2, line3);
+            angle12 = GT.angle(curve1, curve2);
+            angle23 = GT.angle(curve2, curve3);
             theta12 = (Math.PI - Math.abs(angle12)) / 2;
             theta23 = (Math.PI - Math.abs(angle23)) / 2;
             
-            GT.scale(line2, ratio);
+            GT.scale(curve2, ratio);
             if (angle12 < 0) {
-                GT.rotate(line2, theta12, true);
+                GT.rotate(curve2, theta12, true);
             } else {
-                GT.rotate(line2, -theta12, true);
+                GT.rotate(curve2, -theta12, true);
             }
             
             if (angle23 < 0) {
-                GT.rotate(line2, -theta23, false);
+                GT.rotate(curve2, -theta23, false);
             } else {
-                GT.rotate(line2, theta23, false);
+                GT.rotate(curve2, theta23, false);
             }
         }
         
-        line2 = (CubicCurve) curves.get(curves.size() - 2);
-        line3 = (CubicCurve) curves.get(curves.size() - 1);
+        curve2 = (CubicCurve) curves.get(curves.size() - 2);
+        curve3 = (CubicCurve) curves.get(curves.size() - 1);
         
-        angle23 = GT.angle(line2, line3);
+        angle23 = GT.angle(curve2, curve3);
         theta23 = (Math.PI - Math.abs(angle23)) / 2;
         
-        GT.scale(line3, ratio);
+        GT.scale(curve3, ratio);
         if (angle23 < 0) {
-            GT.rotate(line3, theta23, true);
+            GT.rotate(curve3, theta23, true);
         } else {
-            GT.rotate(line3, -theta23, true);
+            GT.rotate(curve3, -theta23, true);
         }
+    }
+    
+    /**
+     * Called from Animate Sequence menu. Show drawing sequence using animation.
+     * @param event 
+     */
+    @FXML
+    private void animateSequence(ActionEvent event) {
+        
     }
     
     @Override
@@ -579,8 +608,8 @@ public class RootLayoutController implements Initializable {
      */
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
-        mainApp.getBackupStates().addListener((ListChangeListener.Change<? extends WritableImage> c) -> {
-            if (mainApp.getBackupStates().size() > 1) {
+        lineLabelGroup.getChildren().addListener((ListChangeListener.Change<? extends Node> c) -> {
+            if (lineLabelGroup.getChildren().size() > 1) {
                 undoMenu.setDisable(false);
             } else {
                 undoMenu.setDisable(true);
