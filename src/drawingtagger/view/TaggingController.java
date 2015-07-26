@@ -8,7 +8,9 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Group;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -16,7 +18,9 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 /**
@@ -36,20 +40,13 @@ public class TaggingController implements Initializable {
     private ComboBox<String> tag;
     
     private MainApp mainApp;
+    private RootLayoutController root;
     private Stage taggingStage;
     private Canvas mainCanvas;
     private GraphicsContext gc;
     private WritableImage image;
     private Rectangle2D rect;
     private int x, y;
-    
-    /**
-     * Add backup state of canvas after tagged.
-     */
-    private void addBackupState() {
-        WritableImage wi = mainCanvas.snapshot(null, null);
-        mainApp.getBackupStates().add(wi);
-    }
     
     /**
      * Called when a value from Drawing Type combo box is selected. Load all
@@ -71,12 +68,38 @@ public class TaggingController implements Initializable {
     private void tag(ActionEvent event) {
         String selectedTag = tag.getValue();
         if (selectedTag != null &&  !selectedTag.isEmpty()) {
-            mainApp.getTaggedRectangles().add(new TaggedRectangle(rect, selectedTag));
-            gc.setFill(Color.RED);
-            gc.fillText(selectedTag, rect.getMinX(), rect.getMinY() - PADDING);
-            addBackupState();
+            TaggedRectangle taggedArea = new TaggedRectangle(rect, selectedTag);
+            mainApp.getTaggedRectangles().add(taggedArea);
+            
+            Group lineLabel = new Group();
+            mainApp.getTaggedLines().stream().filter((taggedLine) 
+                    -> (isInRectangle(taggedLine.asLine(), rect))).map((taggedLine) 
+                            -> new Point2D(taggedLine.getStartX(), taggedLine.getStartY())
+                                    .midpoint(taggedLine.getEndX(), taggedLine.getEndY())).map((midPoint) 
+                                    -> new Text(midPoint.getX(), midPoint.getY(), selectedTag)).map((text) 
+                                            -> {
+                text.setFill(Color.BLUE);
+                return text;
+            }).forEach((text) -> {
+                lineLabel.getChildren().add(text);
+            });
+            root.getLineLabelGroup().add(lineLabel);
+            
             taggingStage.close();
         }
+    }
+    
+    /**
+     * Check if line is in the rectangle
+     * @param line
+     * @param rect
+     * @return true if the line is in rectangle, false otherwise
+     */
+    private boolean isInRectangle(Line line, Rectangle2D rect) {
+        return line.getStartX() >= rect.getMinX() && line.getStartX() <= rect.getMaxX()
+                && line.getEndX() >= rect.getMinX() && line.getEndX() <= rect.getMaxX()
+                && line.getStartY() >= rect.getMinY() && line.getStartY() <= rect.getMaxY()
+                && line.getEndY() >= rect.getMinY() && line.getEndY() <= rect.getMaxY();
     }
     
     /**
@@ -85,22 +108,12 @@ public class TaggingController implements Initializable {
      */
     @FXML
     private void cancel(ActionEvent event) {
-        ObservableList<WritableImage> backupStates = mainApp.getBackupStates();
-        gc.drawImage(backupStates.get(backupStates.size() - 1), 0, 0);
         taggingStage.close();
     }
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         
-    }
-    
-    /**
-     * Called by main application to make a reference back to itself.
-     * @param mainApp 
-     */
-    public void setMainApp(MainApp mainApp) {
-        this.mainApp = mainApp;
     }
     
     /**
@@ -113,18 +126,26 @@ public class TaggingController implements Initializable {
     }
     
     /**
+     * Called from root layout to make reference to itself.
+     * @param root 
+     */
+    public void setRootLayout(RootLayoutController root) {
+        this.root = root;
+        this.mainApp = root.mainApp;
+    }
+    
+    /**
      * Called from RootLayoutController to draw the selected image from
      * main canvas on this stage.
-     * @param mainCanvas
      * @param rectangle 
      */
-    public void setSelectedImage(Canvas mainCanvas, Rectangle rectangle) {
-        this.mainCanvas = mainCanvas;
-        gc = mainCanvas.getGraphicsContext2D();
+    public void setSelectedImage(Rectangle rectangle) {
+        this.mainCanvas = root.getMainCanvas();
+        this.gc = mainCanvas.getGraphicsContext2D();
         this.rect = new Rectangle2D(rectangle.getX(), rectangle.getY(), rectangle.getWidth(), rectangle.getHeight());
         SnapshotParameters param = new SnapshotParameters();
         param.setViewport(rect);
-        image = mainCanvas.snapshot(param, null);
+        this.image = mainCanvas.snapshot(param, null);
         loadImage();
         loadDrawingType();
     }
