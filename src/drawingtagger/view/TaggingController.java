@@ -84,6 +84,7 @@ public class TaggingController implements Initializable {
                 lineLabel.getChildren().add(text);
             });
             root.getLineLabelGroup().add(lineLabel);
+            root.clearBackup();
             
             taggingStage.close();
         }
@@ -161,10 +162,12 @@ public class TaggingController implements Initializable {
     }
     
     /**
-     * Load items for Drawing Type combo box.
+     * Load items for Drawing Type combo box. Set selected value to first item.
      */
     private void loadDrawingType() {
         drawingType.setItems(mainApp.getDrawingTypeList());
+        drawingType.setValue(mainApp.getDrawingTypeList().get(0));
+        loadTags(null);
     }
     
 }

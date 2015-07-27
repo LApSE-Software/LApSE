@@ -1,4 +1,4 @@
-#Drawing Type 1
+#Drawing Template 1
 Hash
 AppleTree
 BbqPit
@@ -17,7 +17,7 @@ Swing
 Trampoline
 TulipFlower
 Error
-#Drawing Type 2
+#Drawing Template 2
 Tag 1
 Tag 2
 Tag 3
@@ -35,7 +35,7 @@ Tag 14
 Tag 15
 Tag 16
 Error
-#Drawing Type 3
+#Drawing Template 3
 Tag 1
 Tag 2
 Tag 3

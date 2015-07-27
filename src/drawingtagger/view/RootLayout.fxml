@@ -25,13 +25,18 @@
                      <accelerator>
                         <KeyCodeCombination alt="UP" code="Z" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator></MenuItem>
+                  <MenuItem fx:id="redoMenu" disable="true" mnemonicParsing="false" onAction="#redo" text="Redo">
+                     <accelerator>
+                        <KeyCodeCombination alt="UP" code="Y" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator>
+                  </MenuItem>
                   <MenuItem mnemonicParsing="false" onAction="#clearTags" text="Clear" />
           </items>
         </Menu>
             <Menu mnemonicParsing="false" text="View">
               <items>
+                  <CheckMenuItem fx:id="lineLabelMenu" mnemonicParsing="false" selected="true" text="Line Label" />
                   <CheckMenuItem fx:id="drawingSequenceMenu" mnemonicParsing="false" text="Drawing Sequence" />
-                  <CheckMenuItem fx:id="lineLabelMenu" mnemonicParsing="false" text="Line Label" />
               </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Tools">
