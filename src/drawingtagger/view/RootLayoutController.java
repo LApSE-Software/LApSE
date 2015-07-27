@@ -17,6 +17,7 @@ import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -35,7 +36,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -70,6 +70,8 @@ public class RootLayoutController implements Initializable {
     @FXML
     private MenuItem undoMenu;
     @FXML
+    private MenuItem redoMenu;
+    @FXML
     private CheckMenuItem drawingSequenceMenu;
     @FXML
     private CheckMenuItem lineLabelMenu;
@@ -77,6 +79,8 @@ public class RootLayoutController implements Initializable {
     public MainApp mainApp;
     private Group mainGroup;
     private Group lineLabelGroup;
+    private ObservableList<Node> lineLabelBackup;
+    private ObservableList<TaggedRectangle> taggedRectangleBackup;
     private Group drawingSequenceGroup;
     private Canvas canvas;
     private Rectangle rect;
@@ -84,7 +88,6 @@ public class RootLayoutController implements Initializable {
     
     private int minWidth, minHeight;
     private double startX, startY;
-    private WritableImage image;
     
     /**
      * Called from 'Quit' menu. Close the program obviously.
@@ -274,75 +277,97 @@ public class RootLayoutController implements Initializable {
         }
         
         gc = canvas.getGraphicsContext2D();
-        image = new WritableImage((int) canvas.getWidth(), (int) canvas.getHeight());
         
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         
-        draw();
+        drawLines();
         
         canvas.setOnMousePressed((MouseEvent event) -> {
-            mainGroup.getChildren().add(rect);
-            startX = event.getX();
-            startY = event.getY();
-            rect.setX(event.getX());
-            rect.setY(event.getY());
-            rect.setWidth(0);
-            rect.setHeight(0);
-            canvas.snapshot(null, image);
+            initSelectionRectangle(event);
         });
         canvas.setOnMouseDragged((MouseEvent event) -> {
-            double x, y, width, height;
-            if (event.getX() > startX) {
-                x = startX;
-                if (event.getX() > canvas.getWidth()) {
-                    width = canvas.getWidth() - startX - 1.0;
-                } else {
-                    width = event.getX() - startX;
-                }
-            } else {
-                if (event.getX() < 0.0) {
-                    x = 1.0;
-                    width = startX;
-                } else {
-                    x = event.getX();
-                    width = startX - event.getX();
-                }
-            }
-            if (event.getY() > startY) {
-                y = startY;
-                if (event.getY() > canvas.getHeight()) {
-                    height = canvas.getHeight() - startY - 1.0;
-                } else {
-                    height = event.getY() - startY;
-                }
-            } else {
-                if (event.getY() < 0.0) {
-                    y = 1.0;
-                    height = startY;
-                } else {
-                    y = event.getY();
-                    height = startY - event.getY();
-                }
-            }
-
-            rect.setX(x);
-            rect.setY(y);
-            rect.setWidth(width);
-            rect.setHeight(height);
+            resizeSelectionRectangle(event);
         });
         canvas.setOnMouseReleased((MouseEvent event) -> {
-            if (rect.getWidth() != 0 && rect.getHeight() != 0) {
-                openTagging(rect);
-            }
-            mainGroup.getChildren().remove(rect);
+            finishSelectionRectangle(event);
         });
+    }
+    
+    /**
+     * Called when mouse pressed on canvas.
+     * @param event 
+     */
+    private void initSelectionRectangle(MouseEvent event) {
+        mainGroup.getChildren().add(rect);
+        startX = event.getX();
+        startY = event.getY();
+        rect.setX(event.getX());
+        rect.setY(event.getY());
+        rect.setWidth(0);
+        rect.setHeight(0);
+    }
+    
+    /**
+     * Called when mouse dragged on canvas.
+     * @param event 
+     */
+    private void resizeSelectionRectangle(MouseEvent event) {
+        double x, y, width, height;
+        if (event.getX() > startX) {
+            x = startX;
+            if (event.getX() > canvas.getWidth()) {
+                width = canvas.getWidth() - startX - 1.0;
+            } else {
+                width = event.getX() - startX;
+            }
+        } else {
+            if (event.getX() < 0.0) {
+                x = 1.0;
+                width = startX;
+            } else {
+                x = event.getX();
+                width = startX - event.getX();
+            }
+        }
+        if (event.getY() > startY) {
+            y = startY;
+            if (event.getY() > canvas.getHeight()) {
+                height = canvas.getHeight() - startY - 1.0;
+            } else {
+                height = event.getY() - startY;
+            }
+        } else {
+            if (event.getY() < 0.0) {
+                y = 1.0;
+                height = startY;
+            } else {
+                y = event.getY();
+                height = startY - event.getY();
+            }
+        }
+
+        rect.setX(x);
+        rect.setY(y);
+        rect.setWidth(width);
+        rect.setHeight(height);
+    }
+    
+    /**
+     * Called when mouse released on canvas.
+     * @param event 
+     */
+    private void finishSelectionRectangle(MouseEvent event) {
+        if (rect.getWidth() != 0 && rect.getHeight() != 0) {
+            openTagging(rect);
+        }
+        mainGroup.getChildren().remove(rect);
     }
     
     /**
      * Draw lines according to the line coordinate from TRACE file.
      */
-    private void draw() {
+    private void drawLines() {
         gc.setStroke(Color.BLACK);
         mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
             gc.strokeLine(taggedLine.getStartX(), taggedLine.getStartY(),
@@ -477,8 +502,31 @@ public class RootLayoutController implements Initializable {
         ObservableList<TaggedRectangle> taggedRectangles = mainApp.getTaggedRectangles();
         
         if (lineLabels.size() > 1) {
-            lineLabels.remove(lineLabels.size() - 1);
-            taggedRectangles.remove(taggedRectangles.size() - 1);
+            Node removedNode = lineLabels.remove(lineLabels.size() - 1);   // remove last
+            TaggedRectangle removedRect = taggedRectangles.remove(taggedRectangles.size() - 1);   // remove last
+            if (removedNode != null && removedRect != null) {
+                lineLabelBackup.add(removedNode);
+                taggedRectangleBackup.add(removedRect);
+            }
+        }
+    }
+    
+    /**
+     * Called from 'Redo' menu.
+     * @param event 
+     */
+    @FXML
+    private void redo(ActionEvent event) {
+        ObservableList<Node> lineLabels = lineLabelGroup.getChildren();
+        ObservableList<TaggedRectangle> taggedRectangles = mainApp.getTaggedRectangles();
+        
+        if (lineLabelBackup.size() > 0) {
+            Node removedNode = lineLabelBackup.remove(lineLabelBackup.size() - 1); // remove last
+            TaggedRectangle removedRect = taggedRectangleBackup.remove(taggedRectangleBackup.size() - 1);  // remove last
+            if (removedNode != null && removedRect != null) {
+                lineLabels.add(removedNode);
+                taggedRectangles.add(removedRect);
+            }
         }
     }
     
@@ -492,6 +540,7 @@ public class RootLayoutController implements Initializable {
             taggedLine.tag = "";
         });
         lineLabelGroup.getChildren().clear();
+        lineLabelGroup.getChildren().add(new Text());   // dummy
     }
     
     /**
@@ -557,6 +606,14 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
+     * Clear backup.
+     */
+    public void clearBackup() {
+        lineLabelBackup.clear();
+        taggedRectangleBackup.clear();
+    }
+    
+    /**
      * Called from Animate Sequence menu. Show drawing sequence using animation.
      * @param event 
      */
@@ -569,6 +626,8 @@ public class RootLayoutController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         mainGroup = new Group();
         lineLabelGroup = new Group();
+        lineLabelBackup = FXCollections.observableArrayList();
+        taggedRectangleBackup = FXCollections.observableArrayList();
         drawingSequenceGroup = new Group();
         canvas = new Canvas();
         rect = new Rectangle();
@@ -602,17 +661,24 @@ public class RootLayoutController implements Initializable {
     
     /**
      * Called by main application to make a reference back to itself. At the
-     * same time initialize backup states listener to only enable undo button
-     * when there are backup states.
+     * same time initialize backup states listener to only enable undo and redo
+     * button when there are backup states.
      * @param mainApp
      */
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
         lineLabelGroup.getChildren().addListener((ListChangeListener.Change<? extends Node> c) -> {
-            if (lineLabelGroup.getChildren().size() > 1) {
+            if (lineLabelGroup.getChildren().size() > 1) {  // 1 is loaded from file
                 undoMenu.setDisable(false);
             } else {
                 undoMenu.setDisable(true);
+            }
+        });
+        lineLabelBackup.addListener((ListChangeListener.Change<? extends Node> c) -> {
+            if (lineLabelBackup.size() > 0) {
+                redoMenu.setDisable(false);
+            } else {
+                redoMenu.setDisable(true);
             }
         });
     }
