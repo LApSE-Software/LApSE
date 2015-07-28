@@ -32,8 +32,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.MouseButton;
@@ -78,6 +76,7 @@ public class RootLayoutController implements Initializable {
     private CheckMenuItem lineLabelMenu;
     
     public MainApp mainApp;
+    private File file;
     private Group mainGroup;
     private Group lineLabelGroup;
     private ObservableList<Node> lineLabelBackup;
@@ -105,7 +104,7 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void openFile(ActionEvent event) {
-        File file = chooseFile(FileChooserType.OPEN);
+        chooseFile(FileChooserType.OPEN);
         loadFile(file);
         findMinimumSize();
         loadCanvas();
@@ -116,11 +115,11 @@ public class RootLayoutController implements Initializable {
      * @param type
      * @return file
      */
-    private File chooseFile(FileChooserType type) {
+    private void chooseFile(FileChooserType type) {
         final FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text Files", "*.txt"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
-        File file = null;
+        
         if (type == FileChooserType.OPEN) {
             fileChooser.setTitle("Open...");
             file = fileChooser.showOpenDialog(mainApp.getPrimaryStage());
@@ -128,8 +127,6 @@ public class RootLayoutController implements Initializable {
             fileChooser.setTitle("Save...");
             file = fileChooser.showSaveDialog(mainApp.getPrimaryStage());
         }
-        
-        return file;
     }
     
     /**
@@ -427,14 +424,28 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
-     * Save tagging to the selected file. The tagging will be appended at the
-     * end of the line coordinate.
+     * Save tagging to the selected file.
      * @param event 
      */
     @FXML
-    private void saveFile(ActionEvent event) {
-        File file = chooseFile(FileChooserType.SAVE);
-        
+    private void saveAs(ActionEvent event) {
+        chooseFile(FileChooserType.SAVE);
+        saveFile();
+    }
+    
+    /**
+     * Save tagging to current file.
+     * @param event 
+     */
+    @FXML
+    private void save(ActionEvent event) {
+        saveFile();
+    }
+    
+    /**
+     * Save to file with appended tagging at the end of line coordinates.
+     */
+    private void saveFile() {
         if (file != null) {
             try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
                 mainApp.getBeforeLines().stream().forEach((line) -> {
@@ -470,23 +481,10 @@ public class RootLayoutController implements Initializable {
                 });
 
                 loadFile(file); // load again to refresh
-                showFinishedSaving();
             } catch (IOException ex) {
                 Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-    }
-    
-    /**
-     * Show dialog box confirming that file have been saved.
-     */
-    private void showFinishedSaving() {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("Save");
-        alert.setHeaderText(null);
-        alert.setContentText("Done!");
-
-        alert.showAndWait();
     }
     
     /**
