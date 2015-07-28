@@ -36,6 +36,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -237,7 +238,8 @@ public class RootLayoutController implements Initializable {
         int yEnd = Integer.parseInt(value[Y_END]);
         long startTime = Long.parseLong(value[TIME_START]);
         long endTime = Long.parseLong(value[TIME_END]);
-        // if there is extra token (tag)
+        
+        // add tag if there is extra token
         String tag = (value.length == NUMBER_OF_TOKENS + 1) ? value[TAG] : "";
         
         Line line = new Line(xStart, yStart, xEnd, yEnd);
@@ -299,13 +301,15 @@ public class RootLayoutController implements Initializable {
      * @param event 
      */
     private void initSelectionRectangle(MouseEvent event) {
-        mainGroup.getChildren().add(rect);
-        startX = event.getX();
-        startY = event.getY();
-        rect.setX(event.getX());
-        rect.setY(event.getY());
-        rect.setWidth(0);
-        rect.setHeight(0);
+        if (event.isPrimaryButtonDown()) {
+            mainGroup.getChildren().add(rect);
+            startX = event.getX();
+            startY = event.getY();
+            rect.setX(event.getX());
+            rect.setY(event.getY());
+            rect.setWidth(0);
+            rect.setHeight(0);
+        }
     }
     
     /**
@@ -313,44 +317,46 @@ public class RootLayoutController implements Initializable {
      * @param event 
      */
     private void resizeSelectionRectangle(MouseEvent event) {
-        double x, y, width, height;
-        if (event.getX() > startX) {
-            x = startX;
-            if (event.getX() > canvas.getWidth()) {
-                width = canvas.getWidth() - startX - 1.0;
+        if (event.isPrimaryButtonDown()) {
+            double x, y, width, height;
+            if (event.getX() > startX) {
+                x = startX;
+                if (event.getX() > canvas.getWidth()) {
+                    width = canvas.getWidth() - startX - 1.0;
+                } else {
+                    width = event.getX() - startX;
+                }
             } else {
-                width = event.getX() - startX;
+                if (event.getX() < 0.0) {
+                    x = 1.0;
+                    width = startX;
+                } else {
+                    x = event.getX();
+                    width = startX - event.getX();
+                }
             }
-        } else {
-            if (event.getX() < 0.0) {
-                x = 1.0;
-                width = startX;
+            if (event.getY() > startY) {
+                y = startY;
+                if (event.getY() > canvas.getHeight()) {
+                    height = canvas.getHeight() - startY - 1.0;
+                } else {
+                    height = event.getY() - startY;
+                }
             } else {
-                x = event.getX();
-                width = startX - event.getX();
+                if (event.getY() < 0.0) {
+                    y = 1.0;
+                    height = startY;
+                } else {
+                    y = event.getY();
+                    height = startY - event.getY();
+                }
             }
-        }
-        if (event.getY() > startY) {
-            y = startY;
-            if (event.getY() > canvas.getHeight()) {
-                height = canvas.getHeight() - startY - 1.0;
-            } else {
-                height = event.getY() - startY;
-            }
-        } else {
-            if (event.getY() < 0.0) {
-                y = 1.0;
-                height = startY;
-            } else {
-                y = event.getY();
-                height = startY - event.getY();
-            }
-        }
 
-        rect.setX(x);
-        rect.setY(y);
-        rect.setWidth(width);
-        rect.setHeight(height);
+            rect.setX(x);
+            rect.setY(y);
+            rect.setWidth(width);
+            rect.setHeight(height);
+        }
     }
     
     /**
@@ -358,10 +364,12 @@ public class RootLayoutController implements Initializable {
      * @param event 
      */
     private void finishSelectionRectangle(MouseEvent event) {
-        if (rect.getWidth() != 0 && rect.getHeight() != 0) {
-            openTagging(rect);
+        if (event.getButton() == MouseButton.PRIMARY) {
+            if (rect.getWidth() != 0 && rect.getHeight() != 0) {
+                openTagging(rect);
+            }
+            mainGroup.getChildren().remove(rect);
         }
-        mainGroup.getChildren().remove(rect);
     }
     
     /**
@@ -427,42 +435,45 @@ public class RootLayoutController implements Initializable {
     private void saveFile(ActionEvent event) {
         File file = chooseFile(FileChooserType.SAVE);
         
-        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
-            mainApp.getBeforeLines().stream().forEach((line) -> {
-                writer.println(line);
-            });
-            
-            for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
-                writer.print(taggedLine.id + ",");
-                writer.print((int) taggedLine.getStartX() + ",");
-                writer.print((int) taggedLine.getEndX() + ",");
-                writer.print((int) taggedLine.getStartY() + ",");
-                writer.print((int) taggedLine.getEndY() + ",");
-                writer.print(taggedLine.timeStart + ",");
-                if (taggedLine.tag.isEmpty()) {
-                    found: {
-                        for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
-                            if (isInRectangle(taggedLine.asLine(), taggedRectangle.rect)) {
-                                writer.print(taggedLine.timeEnd + ",");
-                                writer.println(taggedRectangle.tag);
-                                break found;
+        if (file != null) {
+            try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
+                mainApp.getBeforeLines().stream().forEach((line) -> {
+                    writer.println(line);
+                });
+
+                for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
+                    writer.print(taggedLine.id + ",");
+                    writer.print((int) taggedLine.getStartX() + ",");
+                    writer.print((int) taggedLine.getEndX() + ",");
+                    writer.print((int) taggedLine.getStartY() + ",");
+                    writer.print((int) taggedLine.getEndY() + ",");
+                    writer.print(taggedLine.timeStart + ",");
+                    if (taggedLine.tag.isEmpty()) {
+                        found: {
+                            for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
+                                if (isInRectangle(taggedLine.asLine(), taggedRectangle.rect)) {
+                                    writer.print(taggedLine.timeEnd + ",");
+                                    writer.println(taggedRectangle.tag);
+                                    break found;
+                                }
                             }
+                            writer.println(taggedLine.timeEnd);
                         }
-                        writer.println(taggedLine.timeEnd);
+                    } else {
+                        writer.print(taggedLine.timeEnd + ",");
+                        writer.println(taggedLine.tag);
                     }
-                } else {
-                    writer.print(taggedLine.timeEnd + ",");
-                    writer.println(taggedLine.tag);
                 }
+
+                mainApp.getAfterLines().stream().forEach((line) -> {
+                    writer.println(line);
+                });
+
+                loadFile(file); // load again to refresh
+                showFinishedSaving();
+            } catch (IOException ex) {
+                Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
-            mainApp.getAfterLines().stream().forEach((line) -> {
-                writer.println(line);
-            });
-            
-            showFinishedSaving();
-        } catch (IOException ex) {
-            Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     

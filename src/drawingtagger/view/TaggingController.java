@@ -74,10 +74,10 @@ public class TaggingController implements Initializable {
             Group lineLabel = new Group();
             mainApp.getTaggedLines().stream().filter((taggedLine) 
                     -> (isInRectangle(taggedLine.asLine(), rect))).map((taggedLine) 
-                            -> new Point2D(taggedLine.getStartX(), taggedLine.getStartY())
-                                    .midpoint(taggedLine.getEndX(), taggedLine.getEndY())).map((midPoint) 
-                                    -> new Text(midPoint.getX(), midPoint.getY(), selectedTag)).map((text) 
-                                            -> {
+                    -> new Point2D(taggedLine.getStartX(), taggedLine.getStartY())
+                            .midpoint(taggedLine.getEndX(), taggedLine.getEndY())).map((midPoint) 
+                    -> new Text(midPoint.getX(), midPoint.getY(), selectedTag)).map((text) 
+                    -> {
                 text.setFill(Color.BLUE);
                 return text;
             }).forEach((text) -> {
