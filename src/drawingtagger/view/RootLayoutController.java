@@ -32,6 +32,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Alert;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.MouseButton;
@@ -73,6 +74,8 @@ public class RootLayoutController implements Initializable {
     @FXML
     private CheckMenuItem drawingSequenceMenu;
     @FXML
+    private CheckMenuItem lineSequenceMenu;
+    @FXML
     private CheckMenuItem lineLabelMenu;
     
     public MainApp mainApp;
@@ -81,7 +84,7 @@ public class RootLayoutController implements Initializable {
     private Group lineLabelGroup;
     private ObservableList<Node> lineLabelBackup;
     private ObservableList<TaggedRectangle> taggedRectangleBackup;
-    private Group drawingSequenceGroup;
+    private Group lineSequenceGroup;
     private Canvas canvas;
     private Rectangle rect;
     private GraphicsContext gc;
@@ -106,8 +109,7 @@ public class RootLayoutController implements Initializable {
     private void openFile(ActionEvent event) {
         chooseFile(FileChooserType.OPEN);
         loadFile(file);
-        findMinimumSize();
-        loadCanvas();
+        
     }
     
     /**
@@ -136,7 +138,7 @@ public class RootLayoutController implements Initializable {
     private void loadFile(File file) {
         if (file != null) {
             mainApp.clearData();
-            drawingSequenceGroup.getChildren().clear();
+            lineSequenceGroup.getChildren().clear();
             lineLabelGroup.getChildren().clear();
             Group lineLabelFromFile = new Group();
             
@@ -171,6 +173,14 @@ public class RootLayoutController implements Initializable {
                         mainApp.getBeforeLines().add(temp);
                     }
                 }
+                
+                if (mainApp.getTaggedLines().isEmpty()) {
+                    showWarningCorruptedFile();
+                    return;
+                }
+                
+                findMinimumCanvasSize();
+                loadCanvas();
                 lineLabelGroup.getChildren().add(lineLabelFromFile);
                 loadSequencePoint(null);    // remove last curve
                 makeCurves();
@@ -187,11 +197,22 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
+     * Show dialog stating that the file is either corrupted or is not a TRACE file.
+     */
+    private void showWarningCorruptedFile() {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText("The file is either corrupted or is not a TRACE file");
+        alert.showAndWait();
+    }
+    
+    /**
      * Load cubic curve from two mid-points.
      * @param pt 
      */
     private void loadSequencePoint(Point2D pt) {
-        ObservableList<Node> curves = drawingSequenceGroup.getChildren();
+        ObservableList<Node> curves = lineSequenceGroup.getChildren();
         if (curves.isEmpty()) {
             CubicCurve curve = new CubicCurve();
             curve.setStartX(pt.getX());
@@ -246,7 +267,7 @@ public class RootLayoutController implements Initializable {
     /**
      * Find minimum size of canvas.
      */
-    private void findMinimumSize() {
+    private void findMinimumCanvasSize() {
         minWidth = 0;
         minHeight = 0;
         mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
@@ -271,8 +292,8 @@ public class RootLayoutController implements Initializable {
         if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
             mainGroup.getChildren().add(lineLabelGroup);
         }
-        if (drawingSequenceMenu.selectedProperty().getValue()) {    // if drawingSequenceMenu is selected
-            mainGroup.getChildren().add(drawingSequenceGroup);
+        if (lineSequenceMenu.selectedProperty().getValue()) {    // if drawingSequenceMenu is selected
+            mainGroup.getChildren().add(lineSequenceGroup);
         }
         
         gc = canvas.getGraphicsContext2D();
@@ -556,7 +577,7 @@ public class RootLayoutController implements Initializable {
      * Make curves from the drawing sequence.
      */
     private void makeCurves() {
-        ObservableList<Node> curves = drawingSequenceGroup.getChildren();
+        ObservableList<Node> curves = lineSequenceGroup.getChildren();
         if (curves.size() < 3) {
             return;
         }
@@ -628,7 +649,7 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void animateSequence(ActionEvent event) {
-        
+        // TODO
     }
     
     @Override
@@ -637,7 +658,7 @@ public class RootLayoutController implements Initializable {
         lineLabelGroup = new Group();
         lineLabelBackup = FXCollections.observableArrayList();
         taggedRectangleBackup = FXCollections.observableArrayList();
-        drawingSequenceGroup = new Group();
+        lineSequenceGroup = new Group();
         canvas = new Canvas();
         rect = new Rectangle();
         rect.setFill(null);
@@ -652,11 +673,11 @@ public class RootLayoutController implements Initializable {
      * Initialize ChangeListener for Line Label menu and Drawing Sequence menu.
      */
     private void initCheckMenuItem() {
-        drawingSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+        lineSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
             if (isSelected) {
-                mainGroup.getChildren().add(drawingSequenceGroup);
+                mainGroup.getChildren().add(lineSequenceGroup);
             } else {
-                mainGroup.getChildren().remove(drawingSequenceGroup);
+                mainGroup.getChildren().remove(lineSequenceGroup);
             }
         });
         lineLabelMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
@@ -666,6 +687,7 @@ public class RootLayoutController implements Initializable {
                 mainGroup.getChildren().remove(lineLabelGroup);
             }
         });
+        // TODO: init drawingSequenceMenu
     }
     
     /**
