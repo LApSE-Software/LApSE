@@ -33,9 +33,9 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -74,13 +74,17 @@ public class RootLayoutController implements Initializable {
     @FXML
     private CheckMenuItem drawingSequenceMenu;
     @FXML
+    private CheckMenuItem lineSequenceMenu;
+    @FXML
     private CheckMenuItem lineLabelMenu;
     
     public MainApp mainApp;
+    private File file;
     private Group mainGroup;
     private Group lineLabelGroup;
     private ObservableList<Node> lineLabelBackup;
     private ObservableList<TaggedRectangle> taggedRectangleBackup;
+    private Group lineSequenceGroup;
     private Group drawingSequenceGroup;
     private Canvas canvas;
     private Rectangle rect;
@@ -90,7 +94,7 @@ public class RootLayoutController implements Initializable {
     private double startX, startY;
     
     /**
-     * Called from 'Quit' menu. Close the program obviously.
+     * Called from 'Quit' menu. Close the program.
      * @param event 
      */
     @FXML
@@ -104,10 +108,8 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void openFile(ActionEvent event) {
-        File file = chooseFile(FileChooserType.OPEN);
+        chooseFile(FileChooserType.OPEN);
         loadFile(file);
-        findMinimumSize();
-        loadCanvas();
     }
     
     /**
@@ -115,11 +117,11 @@ public class RootLayoutController implements Initializable {
      * @param type
      * @return file
      */
-    private File chooseFile(FileChooserType type) {
+    private void chooseFile(FileChooserType type) {
         final FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text Files", "*.txt"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
-        File file = null;
+        
         if (type == FileChooserType.OPEN) {
             fileChooser.setTitle("Open...");
             file = fileChooser.showOpenDialog(mainApp.getPrimaryStage());
@@ -127,8 +129,18 @@ public class RootLayoutController implements Initializable {
             fileChooser.setTitle("Save...");
             file = fileChooser.showSaveDialog(mainApp.getPrimaryStage());
         }
-        
-        return file;
+    }
+    
+    /**
+     * Clear all data. Called before opening new file.
+     */
+    private void clearData() {
+        mainApp.clearData();
+        lineSequenceGroup.getChildren().clear();
+        lineLabelGroup.getChildren().clear();
+        drawingSequenceGroup.getChildren().clear();
+        lineLabelBackup.clear();
+        taggedRectangleBackup.clear();
     }
     
     /**
@@ -137,9 +149,8 @@ public class RootLayoutController implements Initializable {
      */
     private void loadFile(File file) {
         if (file != null) {
-            mainApp.clearData();
-            drawingSequenceGroup.getChildren().clear();
-            lineLabelGroup.getChildren().clear();
+            clearData();
+            
             Group lineLabelFromFile = new Group();
             
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -163,7 +174,7 @@ public class RootLayoutController implements Initializable {
                         mainApp.getTaggedLines().add(taggedLine);
                         Point2D ptA = new Point2D(taggedLine.getStartX(), taggedLine.getStartY());
                         Point2D midPoint = ptA.midpoint(taggedLine.getEndX(), taggedLine.getEndY());
-                        loadSequencePoint(midPoint);
+                        loadSequencePoint(lineSequenceGroup, midPoint);
                         if (!taggedLine.tag.isEmpty()) {  // if tag exists
                             Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
                             text.setFill(Color.RED);
@@ -173,9 +184,19 @@ public class RootLayoutController implements Initializable {
                         mainApp.getBeforeLines().add(temp);
                     }
                 }
+                
+                if (mainApp.getTaggedLines().isEmpty()) {
+                    showWarningCorruptedFile();
+                    return;
+                }
+                
+                FXCollections.sort(mainApp.getTaggedLines());
+                findMinimumCanvasSize();
+                loadCanvas();
                 lineLabelGroup.getChildren().add(lineLabelFromFile);
-                loadSequencePoint(null);    // remove last curve
-                makeCurves();
+                loadSequencePoint(lineSequenceGroup, null);    // remove last curve
+                makeCurves(lineSequenceGroup);
+                generateDrawingSequence();
                 
                 while ((temp = reader.readLine()) != null) {
                     mainApp.getAfterLines().add(temp);
@@ -189,11 +210,66 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
+     * Generate drawing sequence from line sequence by grouping the same label.
+     */
+    private void generateDrawingSequence() {
+        ObservableList<TaggedLine> curves = FXCollections.observableArrayList();
+        String currentTag = mainApp.getTaggedLines().get(0).tag;
+        for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
+            if (taggedLine.tag.equals(currentTag)) {
+                curves.add(taggedLine);
+            } else {
+                currentTag = taggedLine.tag;
+                Point2D midPoint = calculateMidPointOfLineGroup(curves);
+                loadSequencePoint(drawingSequenceGroup, midPoint);
+                curves.clear();
+                curves.add(taggedLine);
+            }
+        }
+        loadSequencePoint(drawingSequenceGroup, calculateMidPointOfLineGroup(curves));
+        loadSequencePoint(drawingSequenceGroup, null);  // remove last curve
+        makeCurves(drawingSequenceGroup);
+    }
+    
+    /**
+     * Calculate the mid point of grouped lines.
+     * @param lines
+     * @return 
+     */
+    private Point2D calculateMidPointOfLineGroup(ObservableList<TaggedLine> lines) {
+        ObservableList<Point2D> midPoints = FXCollections.observableArrayList();
+        lines.stream().forEach((line) -> {
+            midPoints.add(new Point2D(line.getStartX(), line.getStartY())
+                    .midpoint(line.getEndX(), line.getEndY()));
+        });
+        
+        double totalX = 0.0, totalY = 0.0;
+        for (Point2D pt : midPoints) {
+            totalX += pt.getX();
+            totalY += pt.getY();
+        }
+        
+        return new Point2D(totalX / midPoints.size(), totalY / midPoints.size());
+    }
+    
+    /**
+     * Show dialog stating that the file is either corrupted or is not a TRACE file.
+     */
+    private void showWarningCorruptedFile() {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText("The file is either corrupted or is not a TRACE file");
+        alert.showAndWait();
+    }
+    
+    /**
      * Load cubic curve from two mid-points.
+     * @param targetGroup
      * @param pt 
      */
-    private void loadSequencePoint(Point2D pt) {
-        ObservableList<Node> curves = drawingSequenceGroup.getChildren();
+    private void loadSequencePoint(Group targetGroup, Point2D pt) {
+        ObservableList<Node> curves = targetGroup.getChildren();
         if (curves.isEmpty()) {
             CubicCurve curve = new CubicCurve();
             curve.setStartX(pt.getX());
@@ -237,7 +313,8 @@ public class RootLayoutController implements Initializable {
         int yEnd = Integer.parseInt(value[Y_END]);
         long startTime = Long.parseLong(value[TIME_START]);
         long endTime = Long.parseLong(value[TIME_END]);
-        // if there is extra token (tag)
+        
+        // add tag if there is extra token
         String tag = (value.length == NUMBER_OF_TOKENS + 1) ? value[TAG] : "";
         
         Line line = new Line(xStart, yStart, xEnd, yEnd);
@@ -247,7 +324,7 @@ public class RootLayoutController implements Initializable {
     /**
      * Find minimum size of canvas.
      */
-    private void findMinimumSize() {
+    private void findMinimumCanvasSize() {
         minWidth = 0;
         minHeight = 0;
         mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
@@ -272,7 +349,10 @@ public class RootLayoutController implements Initializable {
         if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
             mainGroup.getChildren().add(lineLabelGroup);
         }
-        if (drawingSequenceMenu.selectedProperty().getValue()) {    // if drawingSequenceMenu is selected
+        if (lineSequenceMenu.selectedProperty().getValue()) {    // if lineSequenceMenu is selected
+            mainGroup.getChildren().add(lineSequenceGroup);
+        }
+        if (drawingSequenceMenu.selectedProperty().getValue()) {  // if drawingSequenceMenu is selected
             mainGroup.getChildren().add(drawingSequenceGroup);
         }
         
@@ -299,13 +379,15 @@ public class RootLayoutController implements Initializable {
      * @param event 
      */
     private void initSelectionRectangle(MouseEvent event) {
-        mainGroup.getChildren().add(rect);
-        startX = event.getX();
-        startY = event.getY();
-        rect.setX(event.getX());
-        rect.setY(event.getY());
-        rect.setWidth(0);
-        rect.setHeight(0);
+        if (event.isPrimaryButtonDown()) {
+            mainGroup.getChildren().add(rect);
+            startX = event.getX();
+            startY = event.getY();
+            rect.setX(event.getX());
+            rect.setY(event.getY());
+            rect.setWidth(0);
+            rect.setHeight(0);
+        }
     }
     
     /**
@@ -313,44 +395,46 @@ public class RootLayoutController implements Initializable {
      * @param event 
      */
     private void resizeSelectionRectangle(MouseEvent event) {
-        double x, y, width, height;
-        if (event.getX() > startX) {
-            x = startX;
-            if (event.getX() > canvas.getWidth()) {
-                width = canvas.getWidth() - startX - 1.0;
+        if (event.isPrimaryButtonDown()) {
+            double x, y, width, height;
+            if (event.getX() > startX) {
+                x = startX;
+                if (event.getX() > canvas.getWidth()) {
+                    width = canvas.getWidth() - startX - 1.0;
+                } else {
+                    width = event.getX() - startX;
+                }
             } else {
-                width = event.getX() - startX;
+                if (event.getX() < 0.0) {
+                    x = 1.0;
+                    width = startX;
+                } else {
+                    x = event.getX();
+                    width = startX - event.getX();
+                }
             }
-        } else {
-            if (event.getX() < 0.0) {
-                x = 1.0;
-                width = startX;
+            if (event.getY() > startY) {
+                y = startY;
+                if (event.getY() > canvas.getHeight()) {
+                    height = canvas.getHeight() - startY - 1.0;
+                } else {
+                    height = event.getY() - startY;
+                }
             } else {
-                x = event.getX();
-                width = startX - event.getX();
+                if (event.getY() < 0.0) {
+                    y = 1.0;
+                    height = startY;
+                } else {
+                    y = event.getY();
+                    height = startY - event.getY();
+                }
             }
-        }
-        if (event.getY() > startY) {
-            y = startY;
-            if (event.getY() > canvas.getHeight()) {
-                height = canvas.getHeight() - startY - 1.0;
-            } else {
-                height = event.getY() - startY;
-            }
-        } else {
-            if (event.getY() < 0.0) {
-                y = 1.0;
-                height = startY;
-            } else {
-                y = event.getY();
-                height = startY - event.getY();
-            }
-        }
 
-        rect.setX(x);
-        rect.setY(y);
-        rect.setWidth(width);
-        rect.setHeight(height);
+            rect.setX(x);
+            rect.setY(y);
+            rect.setWidth(width);
+            rect.setHeight(height);
+        }
     }
     
     /**
@@ -358,10 +442,12 @@ public class RootLayoutController implements Initializable {
      * @param event 
      */
     private void finishSelectionRectangle(MouseEvent event) {
-        if (rect.getWidth() != 0 && rect.getHeight() != 0) {
-            openTagging(rect);
+        if (event.getButton() == MouseButton.PRIMARY) {
+            if (rect.getWidth() != 0 && rect.getHeight() != 0) {
+                openTagging(rect);
+            }
+            mainGroup.getChildren().remove(rect);
         }
-        mainGroup.getChildren().remove(rect);
     }
     
     /**
@@ -419,63 +505,67 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
-     * Save tagging to the selected file. The tagging will be appended at the
-     * end of the line coordinate.
+     * Save tagging to the selected file.
      * @param event 
      */
     @FXML
-    private void saveFile(ActionEvent event) {
-        File file = chooseFile(FileChooserType.SAVE);
-        
-        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
-            mainApp.getBeforeLines().stream().forEach((line) -> {
-                writer.println(line);
-            });
-            
-            for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
-                writer.print(taggedLine.id + ",");
-                writer.print((int) taggedLine.getStartX() + ",");
-                writer.print((int) taggedLine.getEndX() + ",");
-                writer.print((int) taggedLine.getStartY() + ",");
-                writer.print((int) taggedLine.getEndY() + ",");
-                writer.print(taggedLine.timeStart + ",");
-                if (taggedLine.tag.isEmpty()) {
-                    found: {
-                        for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
-                            if (isInRectangle(taggedLine.asLine(), taggedRectangle.rect)) {
-                                writer.print(taggedLine.timeEnd + ",");
-                                writer.println(taggedRectangle.tag);
-                                break found;
-                            }
-                        }
-                        writer.println(taggedLine.timeEnd);
-                    }
-                } else {
-                    writer.print(taggedLine.timeEnd + ",");
-                    writer.println(taggedLine.tag);
-                }
-            }
-            
-            mainApp.getAfterLines().stream().forEach((line) -> {
-                writer.println(line);
-            });
-            
-            showFinishedSaving();
-        } catch (IOException ex) {
-            Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    private void saveAs(ActionEvent event) {
+        chooseFile(FileChooserType.SAVE);
+        saveFile();
     }
     
     /**
-     * Show dialog box confirming that file have been saved.
+     * Save tagging to current file.
+     * @param event 
      */
-    private void showFinishedSaving() {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("Save");
-        alert.setHeaderText(null);
-        alert.setContentText("Done!");
+    @FXML
+    private void save(ActionEvent event) {
+        saveFile();
+    }
+    
+    /**
+     * Save to file with appended tagging at the end of line coordinates.
+     */
+    private void saveFile() {
+        if (file != null) {
+            try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
+                mainApp.getBeforeLines().stream().forEach((line) -> {
+                    writer.println(line);
+                });
 
-        alert.showAndWait();
+                for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
+                    writer.print(taggedLine.id + ",");
+                    writer.print((int) taggedLine.getStartX() + ",");
+                    writer.print((int) taggedLine.getEndX() + ",");
+                    writer.print((int) taggedLine.getStartY() + ",");
+                    writer.print((int) taggedLine.getEndY() + ",");
+                    writer.print(taggedLine.timeStart + ",");
+                    if (taggedLine.tag.isEmpty()) {
+                        found: {
+                            for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
+                                if (isInRectangle(taggedLine.asLine(), taggedRectangle.rect)) {
+                                    writer.print(taggedLine.timeEnd + ",");
+                                    writer.println(taggedRectangle.tag);
+                                    break found;
+                                }
+                            }
+                            writer.println(taggedLine.timeEnd);
+                        }
+                    } else {
+                        writer.print(taggedLine.timeEnd + ",");
+                        writer.println(taggedLine.tag);
+                    }
+                }
+
+                mainApp.getAfterLines().stream().forEach((line) -> {
+                    writer.println(line);
+                });
+
+                loadFile(file); // load again to refresh
+            } catch (IOException ex) {
+                Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
     
     /**
@@ -536,22 +626,25 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void clearTags(ActionEvent event) {
-        mainApp.getTaggedLines().stream().filter((taggedLine) -> (!taggedLine.tag.isEmpty())).forEach((taggedLine) -> {
+        mainApp.getTaggedLines().stream().filter((taggedLine) 
+                -> (!taggedLine.tag.isEmpty())).forEach((taggedLine) 
+                -> {
             taggedLine.tag = "";
         });
         lineLabelGroup.getChildren().clear();
         lineLabelGroup.getChildren().add(new Text());   // dummy
+        drawingSequenceGroup.getChildren().clear();
     }
     
     /**
      * Make curves from the drawing sequence.
      */
-    private void makeCurves() {
-        ObservableList<Node> curves = drawingSequenceGroup.getChildren();
+    private void makeCurves(Group targetGroup) {
+        ObservableList<Node> curves = targetGroup.getChildren();
         if (curves.size() < 3) {
             return;
         }
-        double ratio = 0.3;
+        double ratio = 0.1;
         CubicCurve curve1 = (CubicCurve) curves.get(0),
                 curve2 = (CubicCurve) curves.get(1),
                 curve3;
@@ -619,7 +712,7 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void animateSequence(ActionEvent event) {
-        
+        // TODO
     }
     
     @Override
@@ -628,6 +721,7 @@ public class RootLayoutController implements Initializable {
         lineLabelGroup = new Group();
         lineLabelBackup = FXCollections.observableArrayList();
         taggedRectangleBackup = FXCollections.observableArrayList();
+        lineSequenceGroup = new Group();
         drawingSequenceGroup = new Group();
         canvas = new Canvas();
         rect = new Rectangle();
@@ -643,11 +737,11 @@ public class RootLayoutController implements Initializable {
      * Initialize ChangeListener for Line Label menu and Drawing Sequence menu.
      */
     private void initCheckMenuItem() {
-        drawingSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+        lineSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
             if (isSelected) {
-                mainGroup.getChildren().add(drawingSequenceGroup);
+                mainGroup.getChildren().add(lineSequenceGroup);
             } else {
-                mainGroup.getChildren().remove(drawingSequenceGroup);
+                mainGroup.getChildren().remove(lineSequenceGroup);
             }
         });
         lineLabelMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
@@ -655,6 +749,13 @@ public class RootLayoutController implements Initializable {
                 mainGroup.getChildren().add(lineLabelGroup);
             } else {
                 mainGroup.getChildren().remove(lineLabelGroup);
+            }
+        });
+        drawingSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+            if (isSelected) {
+                mainGroup.getChildren().add(drawingSequenceGroup);
+            } else {
+                mainGroup.getChildren().remove(drawingSequenceGroup);
             }
         });
     }

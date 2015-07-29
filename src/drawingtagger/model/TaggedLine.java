@@ -6,7 +6,7 @@ import javafx.scene.shape.Line;
  *
  * @author Burhanuddin
  */
-public class TaggedLine {
+public class TaggedLine implements Comparable<TaggedLine> {
     public int id;
     public long timeStart, timeEnd;
     public String tag;
@@ -66,5 +66,15 @@ public class TaggedLine {
      */
     public Line asLine() {
         return line;
+    }
+
+    /**
+     * To be used for comparable.
+     * @param o
+     * @return 
+     */
+    @Override
+    public int compareTo(TaggedLine o) {
+        return (int) (timeStart - o.timeStart);
     }
 }
