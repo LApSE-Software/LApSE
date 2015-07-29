@@ -36,8 +36,11 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.CubicCurve;
@@ -103,6 +106,37 @@ public class RootLayoutController implements Initializable {
     @FXML
     private void quit(ActionEvent event) {
         mainApp.getPrimaryStage().close();
+    }
+    
+    /**
+     * Show that copy of file is allowed indicated by the icon at mouse cursor.
+     * @param event 
+     */
+    @FXML
+    private void acceptFileTransferByDragAndDrop(DragEvent event) {
+        Dragboard db = event.getDragboard();
+        if (db.hasFiles()) {
+            event.acceptTransferModes(TransferMode.COPY);
+        } else {
+            event.consume();
+        }
+    }
+    
+    /**
+     * Called when file is drag and drop onto the pane.
+     * @param event 
+     */
+    @FXML
+    private void openFileByDragAndDrop(DragEvent event) {
+        Dragboard db = event.getDragboard();
+        boolean success = false;
+        if (db.hasFiles()) {
+            success = true;
+            String filePath = db.getFiles().get(0).getAbsolutePath();
+            loadFile(new File(filePath));
+        }
+        event.setDropCompleted(success);
+        event.consume();
     }
     
     /**
