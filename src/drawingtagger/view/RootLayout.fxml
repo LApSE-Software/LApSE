@@ -46,8 +46,8 @@
             <Menu mnemonicParsing="false" text="View">
               <items>
                   <CheckMenuItem fx:id="lineLabelMenu" mnemonicParsing="false" selected="true" text="Line Label" />
-                  <CheckMenuItem fx:id="lineSequenceMenu" mnemonicParsing="false" text="Line Sequence" />
-                  <CheckMenuItem mnemonicParsing="false" text="Drawing Sequence" />
+                  <CheckMenuItem fx:id="lineSequenceMenu" disable="true" mnemonicParsing="false" text="Line Sequence" />
+                  <CheckMenuItem fx:id="drawingSequenceMenu" mnemonicParsing="false" text="Drawing Sequence" />
               </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Tools">

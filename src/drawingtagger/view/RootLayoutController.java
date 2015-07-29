@@ -85,6 +85,7 @@ public class RootLayoutController implements Initializable {
     private ObservableList<Node> lineLabelBackup;
     private ObservableList<TaggedRectangle> taggedRectangleBackup;
     private Group lineSequenceGroup;
+    private Group drawingSequenceGroup;
     private Canvas canvas;
     private Rectangle rect;
     private GraphicsContext gc;
@@ -93,7 +94,7 @@ public class RootLayoutController implements Initializable {
     private double startX, startY;
     
     /**
-     * Called from 'Quit' menu. Close the program obviously.
+     * Called from 'Quit' menu. Close the program.
      * @param event 
      */
     @FXML
@@ -109,7 +110,6 @@ public class RootLayoutController implements Initializable {
     private void openFile(ActionEvent event) {
         chooseFile(FileChooserType.OPEN);
         loadFile(file);
-        
     }
     
     /**
@@ -132,14 +132,25 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
+     * Clear all data. Called before opening new file.
+     */
+    private void clearData() {
+        mainApp.clearData();
+        lineSequenceGroup.getChildren().clear();
+        lineLabelGroup.getChildren().clear();
+        drawingSequenceGroup.getChildren().clear();
+        lineLabelBackup.clear();
+        taggedRectangleBackup.clear();
+    }
+    
+    /**
      * Load TRACE file.
      * @param file 
      */
     private void loadFile(File file) {
         if (file != null) {
-            mainApp.clearData();
-            lineSequenceGroup.getChildren().clear();
-            lineLabelGroup.getChildren().clear();
+            clearData();
+            
             Group lineLabelFromFile = new Group();
             
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -163,7 +174,7 @@ public class RootLayoutController implements Initializable {
                         mainApp.getTaggedLines().add(taggedLine);
                         Point2D ptA = new Point2D(taggedLine.getStartX(), taggedLine.getStartY());
                         Point2D midPoint = ptA.midpoint(taggedLine.getEndX(), taggedLine.getEndY());
-                        loadSequencePoint(midPoint);
+                        loadSequencePoint(lineSequenceGroup, midPoint);
                         if (!taggedLine.tag.isEmpty()) {  // if tag exists
                             Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
                             text.setFill(Color.RED);
@@ -179,11 +190,13 @@ public class RootLayoutController implements Initializable {
                     return;
                 }
                 
+                FXCollections.sort(mainApp.getTaggedLines());
                 findMinimumCanvasSize();
                 loadCanvas();
                 lineLabelGroup.getChildren().add(lineLabelFromFile);
-                loadSequencePoint(null);    // remove last curve
-                makeCurves();
+                loadSequencePoint(lineSequenceGroup, null);    // remove last curve
+                makeCurves(lineSequenceGroup);
+                generateDrawingSequence();
                 
                 while ((temp = reader.readLine()) != null) {
                     mainApp.getAfterLines().add(temp);
@@ -194,6 +207,49 @@ public class RootLayoutController implements Initializable {
                 Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+    
+    /**
+     * Generate drawing sequence from line sequence by grouping the same label.
+     */
+    private void generateDrawingSequence() {
+        ObservableList<TaggedLine> curves = FXCollections.observableArrayList();
+        String currentTag = mainApp.getTaggedLines().get(0).tag;
+        for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
+            if (taggedLine.tag.equals(currentTag)) {
+                curves.add(taggedLine);
+            } else {
+                currentTag = taggedLine.tag;
+                Point2D midPoint = calculateMidPointOfLineGroup(curves);
+                loadSequencePoint(drawingSequenceGroup, midPoint);
+                curves.clear();
+                curves.add(taggedLine);
+            }
+        }
+        loadSequencePoint(drawingSequenceGroup, calculateMidPointOfLineGroup(curves));
+        loadSequencePoint(drawingSequenceGroup, null);  // remove last curve
+        makeCurves(drawingSequenceGroup);
+    }
+    
+    /**
+     * Calculate the mid point of grouped lines.
+     * @param lines
+     * @return 
+     */
+    private Point2D calculateMidPointOfLineGroup(ObservableList<TaggedLine> lines) {
+        ObservableList<Point2D> midPoints = FXCollections.observableArrayList();
+        lines.stream().forEach((line) -> {
+            midPoints.add(new Point2D(line.getStartX(), line.getStartY())
+                    .midpoint(line.getEndX(), line.getEndY()));
+        });
+        
+        double totalX = 0.0, totalY = 0.0;
+        for (Point2D pt : midPoints) {
+            totalX += pt.getX();
+            totalY += pt.getY();
+        }
+        
+        return new Point2D(totalX / midPoints.size(), totalY / midPoints.size());
     }
     
     /**
@@ -209,10 +265,11 @@ public class RootLayoutController implements Initializable {
     
     /**
      * Load cubic curve from two mid-points.
+     * @param targetGroup
      * @param pt 
      */
-    private void loadSequencePoint(Point2D pt) {
-        ObservableList<Node> curves = lineSequenceGroup.getChildren();
+    private void loadSequencePoint(Group targetGroup, Point2D pt) {
+        ObservableList<Node> curves = targetGroup.getChildren();
         if (curves.isEmpty()) {
             CubicCurve curve = new CubicCurve();
             curve.setStartX(pt.getX());
@@ -292,8 +349,11 @@ public class RootLayoutController implements Initializable {
         if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
             mainGroup.getChildren().add(lineLabelGroup);
         }
-        if (lineSequenceMenu.selectedProperty().getValue()) {    // if drawingSequenceMenu is selected
+        if (lineSequenceMenu.selectedProperty().getValue()) {    // if lineSequenceMenu is selected
             mainGroup.getChildren().add(lineSequenceGroup);
+        }
+        if (drawingSequenceMenu.selectedProperty().getValue()) {  // if drawingSequenceMenu is selected
+            mainGroup.getChildren().add(drawingSequenceGroup);
         }
         
         gc = canvas.getGraphicsContext2D();
@@ -566,22 +626,25 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void clearTags(ActionEvent event) {
-        mainApp.getTaggedLines().stream().filter((taggedLine) -> (!taggedLine.tag.isEmpty())).forEach((taggedLine) -> {
+        mainApp.getTaggedLines().stream().filter((taggedLine) 
+                -> (!taggedLine.tag.isEmpty())).forEach((taggedLine) 
+                -> {
             taggedLine.tag = "";
         });
         lineLabelGroup.getChildren().clear();
         lineLabelGroup.getChildren().add(new Text());   // dummy
+        drawingSequenceGroup.getChildren().clear();
     }
     
     /**
      * Make curves from the drawing sequence.
      */
-    private void makeCurves() {
-        ObservableList<Node> curves = lineSequenceGroup.getChildren();
+    private void makeCurves(Group targetGroup) {
+        ObservableList<Node> curves = targetGroup.getChildren();
         if (curves.size() < 3) {
             return;
         }
-        double ratio = 0.3;
+        double ratio = 0.1;
         CubicCurve curve1 = (CubicCurve) curves.get(0),
                 curve2 = (CubicCurve) curves.get(1),
                 curve3;
@@ -659,6 +722,7 @@ public class RootLayoutController implements Initializable {
         lineLabelBackup = FXCollections.observableArrayList();
         taggedRectangleBackup = FXCollections.observableArrayList();
         lineSequenceGroup = new Group();
+        drawingSequenceGroup = new Group();
         canvas = new Canvas();
         rect = new Rectangle();
         rect.setFill(null);
@@ -687,7 +751,13 @@ public class RootLayoutController implements Initializable {
                 mainGroup.getChildren().remove(lineLabelGroup);
             }
         });
-        // TODO: init drawingSequenceMenu
+        drawingSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+            if (isSelected) {
+                mainGroup.getChildren().add(drawingSequenceGroup);
+            } else {
+                mainGroup.getChildren().remove(drawingSequenceGroup);
+            }
+        });
     }
     
     /**
