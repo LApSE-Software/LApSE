@@ -35,6 +35,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
@@ -67,6 +68,8 @@ public class RootLayoutController implements Initializable {
     
     @FXML
     private AnchorPane drawingPane;
+    @FXML
+    private ScrollPane scrollPane;
     @FXML
     private MenuItem undoMenu;
     @FXML
@@ -375,6 +378,28 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
+     * Allow panning of scroll pane.
+     * @param event 
+     */
+    @FXML
+    private void enablePan(MouseEvent event) {
+        if (event.getButton() == MouseButton.SECONDARY) {
+            scrollPane.setPannable(true);
+        }
+    }
+    
+    /**
+     * Disallow panning of scroll pane.
+     * @param event 
+     */
+    @FXML
+    private void disablePan(MouseEvent event) {
+        if (event.getButton() == MouseButton.SECONDARY) {
+            scrollPane.setPannable(false);
+        }
+    }
+    
+    /**
      * Called when mouse pressed on canvas.
      * @param event 
      */
@@ -444,7 +469,7 @@ public class RootLayoutController implements Initializable {
     private void finishSelectionRectangle(MouseEvent event) {
         if (event.getButton() == MouseButton.PRIMARY) {
             if (rect.getWidth() != 0 && rect.getHeight() != 0) {
-                openTagging(rect);
+                openTaggingWindow(rect);
             }
             mainGroup.getChildren().remove(rect);
         }
@@ -465,7 +490,7 @@ public class RootLayoutController implements Initializable {
      * Called on mouse released from canvas. Open Tagging window.
      * @param rect 
      */
-    private void openTagging(Rectangle rect) {
+    private void openTaggingWindow(Rectangle rect) {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("Tagging.fxml"));
         try {
             Parent root = loader.load();

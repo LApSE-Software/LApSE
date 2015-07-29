@@ -69,7 +69,9 @@ public class TaggedLine implements Comparable<TaggedLine> {
     }
 
     /**
-     * To be used for comparable.
+     * To be used for comparable. Negative value means this line is drawn earlier,
+     * zero value means both are drawn at the same time (which would be impossible),
+     * positive value means this line is drawn late.
      * @param o
      * @return 
      */
