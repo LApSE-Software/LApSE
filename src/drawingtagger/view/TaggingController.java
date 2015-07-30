@@ -15,7 +15,6 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -73,12 +72,12 @@ public class TaggingController implements Initializable {
             mainApp.getTaggedRectangles().add(taggedArea);
             
             Group lineLabel = new Group();
-            mainApp.getTaggedLines().stream().filter((taggedLine) 
-                    -> (isInRectangle(taggedLine.asLine(), rect))).map((taggedLine) 
-                    -> new Point2D(taggedLine.getStartX(), taggedLine.getStartY())
-                            .midpoint(taggedLine.getEndX(), taggedLine.getEndY())).map((midPoint) 
-                    -> new Text(midPoint.getX(), midPoint.getY(), selectedTag)).map((text) 
-                    -> {
+            mainApp.getTaggedLines().stream()
+                    .filter((taggedLine) -> (isInRectangle(taggedLine.asLine(), rect)))
+                    .map((taggedLine) -> new Point2D(taggedLine.getStartX(), taggedLine.getStartY())
+                            .midpoint(taggedLine.getEndX(), taggedLine.getEndY()))
+                    .map((midPoint) -> new Text(midPoint.getX(), midPoint.getY(), selectedTag))
+                    .map((text) -> {
                 text.setFill(Color.BLUE);
                 return text;
             }).forEach((text) -> {
