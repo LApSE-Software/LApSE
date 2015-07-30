@@ -25,12 +25,11 @@ package drawingtagger;
 
 import drawingtagger.model.TaggedLine;
 import drawingtagger.model.TaggedRectangle;
+import drawingtagger.util.ExceptionFormatter;
 import drawingtagger.view.RootLayoutController;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,6 +38,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -46,6 +47,7 @@ import javafx.stage.Stage;
  */
 public class MainApp extends Application {
     
+    private static final Logger logger = LogManager.getLogger();
     public static final String TITLE = "Drawing Tagger";
     
     private Stage primaryStage;
@@ -67,7 +69,7 @@ public class MainApp extends Application {
         tags = FXCollections.observableHashMap();
         drawingTypeList = FXCollections.observableArrayList();
         taggedRectangles = FXCollections.observableArrayList();
-        loadTags("tags.txt");
+        loadTags("data/tags.txt");
     }
     
     /**
@@ -151,7 +153,7 @@ public class MainApp extends Application {
                 }
             }
         } catch (IOException ex) {
-            Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error(ExceptionFormatter.format(ex));
         }
     }
     
@@ -181,7 +183,7 @@ public class MainApp extends Application {
             
             primaryStage.show();
         } catch (IOException ex) {
-            Logger.getLogger(MainApp.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error(ExceptionFormatter.format(ex));
         }
     }
     

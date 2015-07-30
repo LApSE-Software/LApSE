@@ -52,11 +52,11 @@
     -->
     
     <target name="-post-jfx-deploy">
-        <copy file="tags.txt" todir="${basedir}/${dist.dir}" />
+        <copy file="data/tags.txt" todir="${basedir}/${dist.dir}/data" />
     </target>
     
     <target name="-post-jfx-native">
-        <copy file="tags.txt" todir="${basedir}/${dist.dir}/bundles/${application.title}/app" />
+        <copy file="data/tags.txt" todir="${basedir}/${dist.dir}/bundles/${application.title}/app/data" />
     </target>
     
 </project>

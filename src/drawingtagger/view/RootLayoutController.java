@@ -27,6 +27,7 @@ import drawingtagger.util.FileChooserType;
 import drawingtagger.MainApp;
 import drawingtagger.model.TaggedLine;
 import drawingtagger.model.TaggedRectangle;
+import drawingtagger.util.ExceptionFormatter;
 import drawingtagger.util.GT;
 import drawingtagger.util.TemporaryDataHolder;
 import java.io.BufferedReader;
@@ -38,8 +39,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -74,6 +73,8 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -81,6 +82,7 @@ import javafx.stage.Stage;
  */
 public class RootLayoutController implements Initializable {
     
+    private static final Logger logger = LogManager.getLogger();
     private static final int ID = 0;
     private static final int X_START = 1;
     private static final int X_END = 2;
@@ -242,9 +244,9 @@ public class RootLayoutController implements Initializable {
                     loadProgram();
                 }
             } catch (IOException ex) {
-                Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+                logger.error(ExceptionFormatter.format(ex));
             } catch (Exception ex) {
-                Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+                logger.error(ExceptionFormatter.format(ex));
             }
         }
     }
@@ -600,7 +602,7 @@ public class RootLayoutController implements Initializable {
             
             stage.show();
         } catch (IOException ex) {
-            Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error(ExceptionFormatter.format(ex));
         }
     }
     
@@ -679,7 +681,7 @@ public class RootLayoutController implements Initializable {
 
                 loadFile(file); // load again to refresh
             } catch (IOException ex) {
-                Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+                logger.error(ExceptionFormatter.format(ex));
             }
         }
     }
