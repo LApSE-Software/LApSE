@@ -50,4 +50,13 @@
     nbproject/build-impl.xml and nbproject/jfx-impl.xml.
 
     -->
+    
+    <target name="-post-jfx-deploy">
+        <copy file="tags.txt" todir="${basedir}/${dist.dir}" />
+    </target>
+    
+    <target name="-post-jfx-native">
+        <copy file="tags.txt" todir="${basedir}/${dist.dir}/bundles/${application.title}/app" />
+    </target>
+    
 </project>

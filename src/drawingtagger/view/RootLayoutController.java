@@ -231,7 +231,6 @@ public class RootLayoutController implements Initializable {
         clearData();
         loadDataFromTemporaryData();
         FXCollections.sort(mainApp.getTaggedLines());
-        findMinimumCanvasSize();
         loadCanvas();
         generateLinesAndLabels();
         generateDrawingSequence();
@@ -404,6 +403,7 @@ public class RootLayoutController implements Initializable {
      * Load canvas and initialize its event handler.
      */
     private void loadCanvas() {
+        findMinimumCanvasSize();
         canvas.setWidth(minWidth + GAP);
         canvas.setHeight(minHeight + GAP);
         mainGroup.getChildren().clear();
