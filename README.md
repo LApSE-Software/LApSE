@@ -1,6 +1,7 @@
 # DrawingTagger
 A program to tag or label a part of a drawing. The drawing file is generated from TRACE software by Dr. Peter Cheng.
 
+### File format
 The bare minimum of the file consists of an indicator ```<<Extracted_Lines>>``` followed by the line coordinates. The format for the line coordinates are as follows:
 ```
 <ID>,<X_START>,<X_END>,<Y_START>,<Y_END>,<TIME_START>,<TIME_END>,<TAG>
@@ -22,4 +23,29 @@ An example of TRACE file would have at least the following:
 3,1914,1907,91,93,1360,1469,Hash
 4,1883,1889,129,130,1907,2125,Hash
 5,349,468,293,295,5344,5891,AppleTree
+```
+
+### License
+```
+The MIT License (MIT)
+
+Copyright (c) 2015 Burhanuddin Baharuddin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
