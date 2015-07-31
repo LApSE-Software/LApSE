@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright 2015 Burhanuddin.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package drawingtagger.view;
 
 import drawingtagger.MainApp;
@@ -15,7 +38,6 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -73,12 +95,12 @@ public class TaggingController implements Initializable {
             mainApp.getTaggedRectangles().add(taggedArea);
             
             Group lineLabel = new Group();
-            mainApp.getTaggedLines().stream().filter((taggedLine) 
-                    -> (isInRectangle(taggedLine.asLine(), rect))).map((taggedLine) 
-                    -> new Point2D(taggedLine.getStartX(), taggedLine.getStartY())
-                            .midpoint(taggedLine.getEndX(), taggedLine.getEndY())).map((midPoint) 
-                    -> new Text(midPoint.getX(), midPoint.getY(), selectedTag)).map((text) 
-                    -> {
+            mainApp.getTaggedLines().stream()
+                    .filter((taggedLine) -> (isInRectangle(taggedLine.asLine(), rect)))
+                    .map((taggedLine) -> new Point2D(taggedLine.getStartX(), taggedLine.getStartY())
+                            .midpoint(taggedLine.getEndX(), taggedLine.getEndY()))
+                    .map((midPoint) -> new Text(midPoint.getX(), midPoint.getY(), selectedTag))
+                    .map((text) -> {
                 text.setFill(Color.BLUE);
                 return text;
             }).forEach((text) -> {

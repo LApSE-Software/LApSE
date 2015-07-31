@@ -1,10 +1,35 @@
+/*
+ * The MIT License
+ *
+ * Copyright 2015 Burhanuddin.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package drawingtagger.view;
 
 import drawingtagger.util.FileChooserType;
 import drawingtagger.MainApp;
 import drawingtagger.model.TaggedLine;
 import drawingtagger.model.TaggedRectangle;
+import drawingtagger.util.ExceptionFormatter;
 import drawingtagger.util.GT;
+import drawingtagger.util.TemporaryDataHolder;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -14,8 +39,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -50,6 +73,8 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -57,6 +82,7 @@ import javafx.stage.Stage;
  */
 public class RootLayoutController implements Initializable {
     
+    private static final Logger logger = LogManager.getLogger();
     private static final int ID = 0;
     private static final int X_START = 1;
     private static final int X_END = 2;
@@ -88,6 +114,7 @@ public class RootLayoutController implements Initializable {
     private File file;
     private Group mainGroup;
     private Group lineLabelGroup;
+    private TemporaryDataHolder tempDataHolder;
     private ObservableList<Node> lineLabelBackup;
     private ObservableList<TaggedRectangle> taggedRectangleBackup;
     private Group lineSequenceGroup;
@@ -133,7 +160,8 @@ public class RootLayoutController implements Initializable {
         if (db.hasFiles()) {
             success = true;
             String filePath = db.getFiles().get(0).getAbsolutePath();
-            loadFile(new File(filePath));
+            file = new File(filePath);
+            loadFile(file);
         }
         event.setDropCompleted(success);
         event.consume();
@@ -156,7 +184,7 @@ public class RootLayoutController implements Initializable {
      */
     private void chooseFile(FileChooserType type) {
         final FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text Files", "*.txt"),
+        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("TRACE Files", "*.txt"),
                 new FileChooser.ExtensionFilter("All Files", "*.*"));
         
         if (type == FileChooserType.OPEN) {
@@ -186,64 +214,95 @@ public class RootLayoutController implements Initializable {
      */
     private void loadFile(File file) {
         if (file != null) {
-            clearData();
-            
-            Group lineLabelFromFile = new Group();
-            
+            tempDataHolder.clearAll();
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String temp;
                 boolean foundLine = false;
-                
                 while ((temp = reader.readLine()) != null) {
                     if (temp.equals("<<Extracted_Lines>>")) {
                         foundLine = true;
-                        mainApp.getBeforeLines().add(temp);
+                        tempDataHolder.insertTempData("beforeLines", temp);
                         continue;
                     }
-                    
                     if (foundLine) {
                         if (temp.startsWith("<<")) {
-                            mainApp.getAfterLines().add(temp);
+                            tempDataHolder.insertTempData("afterLines", temp);
                             break;
                         }
-                        
-                        TaggedLine taggedLine = loadLineFromString(temp);
-                        mainApp.getTaggedLines().add(taggedLine);
-                        Point2D ptA = new Point2D(taggedLine.getStartX(), taggedLine.getStartY());
-                        Point2D midPoint = ptA.midpoint(taggedLine.getEndX(), taggedLine.getEndY());
-                        loadSequencePoint(lineSequenceGroup, midPoint);
-                        if (!taggedLine.tag.isEmpty()) {  // if tag exists
-                            Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
-                            text.setFill(Color.RED);
-                            lineLabelFromFile.getChildren().add(text);
-                        }
+                        tempDataHolder.insertTempData("taggedLines", temp);
                     } else {
-                        mainApp.getBeforeLines().add(temp);
+                        tempDataHolder.insertTempData("beforeLines", temp);
                     }
                 }
-                
-                if (mainApp.getTaggedLines().isEmpty()) {
-                    showWarningCorruptedFile();
-                    return;
-                }
-                
-                FXCollections.sort(mainApp.getTaggedLines());
-                findMinimumCanvasSize();
-                loadCanvas();
-                lineLabelGroup.getChildren().add(lineLabelFromFile);
-                loadSequencePoint(lineSequenceGroup, null);    // remove last curve
-                makeCurves(lineSequenceGroup);
-                generateDrawingSequence();
-                
                 while ((temp = reader.readLine()) != null) {
-                    mainApp.getAfterLines().add(temp);
+                    tempDataHolder.insertTempData("afterLines", temp);
                 }
                 
-                mainApp.getPrimaryStage().setTitle(file.getPath() + " - " + MainApp.TITLE);
+                if (tempDataHolder.isEmpty("taggedLines")) {
+                    showWarningCorruptedFile();
+                } else {
+                    loadProgram();
+                }
             } catch (IOException ex) {
-                Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+                logger.error(ExceptionFormatter.format(ex));
+            } catch (Exception ex) {
+                logger.error(ExceptionFormatter.format(ex));
             }
         }
+    }
+    
+    /**
+     * Load program after loading file.
+     */
+    private void loadProgram() throws Exception {
+        clearData();
+        loadDataFromTemporaryData();
+        FXCollections.sort(mainApp.getTaggedLines());
+        loadCanvas();
+        generateLinesAndLabels();
+        generateDrawingSequence();
+        mainApp.getPrimaryStage().setTitle(file.getPath() + " - " + MainApp.TITLE);
+    }
+    
+    /**
+     * Load data to program from temporary data holder. Clears temporary data
+     * afterwards.
+     */
+    private void loadDataFromTemporaryData() {
+        if (!tempDataHolder.isEmpty("beforeLines")) {
+            mainApp.getBeforeLines().addAll(tempDataHolder.retrieveTempData("beforeLines"));
+        }
+        if (!tempDataHolder.isEmpty("afterLines")) {
+            mainApp.getAfterLines().addAll(tempDataHolder.retrieveTempData("afterLines"));
+        }
+        if (!tempDataHolder.isEmpty("taggedLines")) {
+            tempDataHolder.retrieveTempData("taggedLines").stream()
+                    .map((line) -> loadLineFromString(line))
+                    .forEach((taggedLine) -> {
+                mainApp.getTaggedLines().add(taggedLine);
+            });
+        }
+    }
+    
+    /**
+     * Generate lines and its label.
+     */
+    private void generateLinesAndLabels() {
+        ObservableList<TaggedLine> taggedLines = mainApp.getTaggedLines();
+        Group lineLabelFromFile = new Group();
+        taggedLines.stream().forEach((taggedLine) -> {
+            Point2D ptA = new Point2D(taggedLine.getStartX(), taggedLine.getStartY());
+            Point2D midPoint = ptA.midpoint(taggedLine.getEndX(), taggedLine.getEndY());
+            loadSequencePoint(lineSequenceGroup, midPoint);
+            if (!taggedLine.tag.isEmpty()) {    // if tag exists
+                Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
+                text.setFill(Color.RED);
+                lineLabelFromFile.getChildren().add(text);
+            }
+        });
+        loadSequencePoint(lineSequenceGroup, null);    // remove last curve
+        makeCurves(lineSequenceGroup);
+        lineLabelGroup.getChildren().add(lineLabelFromFile);
     }
     
     /**
@@ -367,7 +426,6 @@ public class RootLayoutController implements Initializable {
         mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
             int xPref = (int) Math.max(taggedLine.getStartX(), taggedLine.getEndX());
             int yPref = (int) Math.max(taggedLine.getStartY(), taggedLine.getEndY());
-            
             minWidth = Math.max(minWidth, xPref);
             minHeight = Math.max(minHeight, yPref);
         });
@@ -377,6 +435,7 @@ public class RootLayoutController implements Initializable {
      * Load canvas and initialize its event handler.
      */
     private void loadCanvas() {
+        findMinimumCanvasSize();
         canvas.setWidth(minWidth + GAP);
         canvas.setHeight(minHeight + GAP);
         mainGroup.getChildren().clear();
@@ -543,7 +602,7 @@ public class RootLayoutController implements Initializable {
             
             stage.show();
         } catch (IOException ex) {
-            Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error(ExceptionFormatter.format(ex));
         }
     }
     
@@ -622,7 +681,7 @@ public class RootLayoutController implements Initializable {
 
                 loadFile(file); // load again to refresh
             } catch (IOException ex) {
-                Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+                logger.error(ExceptionFormatter.format(ex));
             }
         }
     }
@@ -685,9 +744,9 @@ public class RootLayoutController implements Initializable {
      */
     @FXML
     private void clearTags(ActionEvent event) {
-        mainApp.getTaggedLines().stream().filter((taggedLine) 
-                -> (!taggedLine.tag.isEmpty())).forEach((taggedLine) 
-                -> {
+        mainApp.getTaggedLines().stream()
+                .filter((taggedLine) -> (!taggedLine.tag.isEmpty()))
+                .forEach((taggedLine) -> {
             taggedLine.tag = "";
         });
         lineLabelGroup.getChildren().clear();
@@ -777,6 +836,7 @@ public class RootLayoutController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         mainGroup = new Group();
+        tempDataHolder = new TemporaryDataHolder();
         lineLabelGroup = new Group();
         lineLabelBackup = FXCollections.observableArrayList();
         taggedRectangleBackup = FXCollections.observableArrayList();

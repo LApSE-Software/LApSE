@@ -1,18 +1,35 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * The MIT License
+ *
+ * Copyright 2015 Burhanuddin.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package drawingtagger;
 
 import drawingtagger.model.TaggedLine;
 import drawingtagger.model.TaggedRectangle;
+import drawingtagger.util.ExceptionFormatter;
 import drawingtagger.view.RootLayoutController;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -21,6 +38,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -28,6 +47,7 @@ import javafx.stage.Stage;
  */
 public class MainApp extends Application {
     
+    private static final Logger logger = LogManager.getLogger();
     public static final String TITLE = "Drawing Tagger";
     
     private Stage primaryStage;
@@ -49,7 +69,7 @@ public class MainApp extends Application {
         tags = FXCollections.observableHashMap();
         drawingTypeList = FXCollections.observableArrayList();
         taggedRectangles = FXCollections.observableArrayList();
-        loadTags("tags.txt");
+        loadTags("data/tags.txt");
     }
     
     /**
@@ -133,7 +153,7 @@ public class MainApp extends Application {
                 }
             }
         } catch (IOException ex) {
-            Logger.getLogger(RootLayoutController.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error(ExceptionFormatter.format(ex));
         }
     }
     
@@ -163,7 +183,7 @@ public class MainApp extends Application {
             
             primaryStage.show();
         } catch (IOException ex) {
-            Logger.getLogger(MainApp.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error(ExceptionFormatter.format(ex));
         }
     }
     

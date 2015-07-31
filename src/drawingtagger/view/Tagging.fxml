@@ -33,7 +33,7 @@
                               <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
                            </rowConstraints>
                            <children>
-                              <Label text="Drawing Type:" />
+                              <Label text="Drawing Template:" />
                               <Label text="Tag:" GridPane.rowIndex="1" />
                               <ComboBox fx:id="drawingType" onAction="#loadTags" prefWidth="150.0" GridPane.columnIndex="1" />
                               <ComboBox fx:id="tag" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />

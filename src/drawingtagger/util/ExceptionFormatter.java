@@ -27,6 +27,13 @@ package drawingtagger.util;
  *
  * @author Burhanuddin
  */
-public enum FileChooserType {
-    OPEN, SAVE
+public class ExceptionFormatter {
+    /**
+     * Format exception into concise string.
+     * @param ex
+     * @return 
+     */
+    public static String format(Exception ex) {
+        return ex.toString() + ": " + ex.getStackTrace()[0].toString();
+    }
 }
