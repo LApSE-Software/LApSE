@@ -27,6 +27,7 @@ import drawingtagger.util.FileChooserType;
 import drawingtagger.MainApp;
 import drawingtagger.model.TaggedLine;
 import drawingtagger.model.TaggedRectangle;
+import drawingtagger.shape.Arrow;
 import drawingtagger.util.ExceptionFormatter;
 import drawingtagger.util.GT;
 import drawingtagger.util.TemporaryDataHolder;
@@ -66,6 +67,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
@@ -105,8 +107,8 @@ public class RootLayoutController implements Initializable {
     private MenuItem redoMenu;
     @FXML
     private CheckMenuItem drawingSequenceMenu;
-    @FXML
-    private CheckMenuItem lineSequenceMenu;
+//    @FXML
+//    private CheckMenuItem lineSequenceMenu;
     @FXML
     private CheckMenuItem lineLabelMenu;
     
@@ -119,6 +121,8 @@ public class RootLayoutController implements Initializable {
     private ObservableList<TaggedRectangle> taggedRectangleBackup;
     private Group lineSequenceGroup;
     private Group drawingSequenceGroup;
+    private Group arrowGroup;
+    private Group circleGroup;
     private Canvas canvas;
     private Rectangle rect;
     private GraphicsContext gc;
@@ -175,6 +179,20 @@ public class RootLayoutController implements Initializable {
     private void openFile(ActionEvent event) {
         chooseFile(FileChooserType.OPEN);
         loadFile(file);
+    }
+    
+    /**
+     * Called from 'About' menu. Show program info.
+     * @param event 
+     */
+    @FXML
+    private void showProgramInfo(ActionEvent event) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("About DrawingTagger");
+        alert.setHeaderText("DrawingTagger Version 0.1.0");
+        alert.setContentText("Copyright \u24D2 Dr Unaizah Hanum binti Obaidellah\r\n\r\n"
+                + "Author: Burhanuddin Baharuddin");
+        alert.show();
     }
     
     /**
@@ -325,6 +343,8 @@ public class RootLayoutController implements Initializable {
         loadSequencePoint(drawingSequenceGroup, calculateMidPointOfLineGroup(curves));
         loadSequencePoint(drawingSequenceGroup, null);  // remove last curve
         makeCurves(drawingSequenceGroup);
+        addArrows(drawingSequenceGroup);
+        addCircles(drawingSequenceGroup);
     }
     
     /**
@@ -445,11 +465,13 @@ public class RootLayoutController implements Initializable {
         if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
             mainGroup.getChildren().add(lineLabelGroup);
         }
-        if (lineSequenceMenu.selectedProperty().getValue()) {    // if lineSequenceMenu is selected
-            mainGroup.getChildren().add(lineSequenceGroup);
-        }
+//        if (lineSequenceMenu.selectedProperty().getValue()) {    // if lineSequenceMenu is selected
+//            mainGroup.getChildren().add(lineSequenceGroup);
+//        }
         if (drawingSequenceMenu.selectedProperty().getValue()) {  // if drawingSequenceMenu is selected
             mainGroup.getChildren().add(drawingSequenceGroup);
+            mainGroup.getChildren().add(arrowGroup);
+            mainGroup.getChildren().add(circleGroup);
         }
         
         gc = canvas.getGraphicsContext2D();
@@ -652,26 +674,26 @@ public class RootLayoutController implements Initializable {
                 });
 
                 for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
-                    writer.print(taggedLine.id + ",");
-                    writer.print((int) taggedLine.getStartX() + ",");
-                    writer.print((int) taggedLine.getEndX() + ",");
-                    writer.print((int) taggedLine.getStartY() + ",");
-                    writer.print((int) taggedLine.getEndY() + ",");
-                    writer.print(taggedLine.timeStart + ",");
+                    writer.print(taggedLine.id + "," +
+                            (int) taggedLine.getStartX() + "," +
+                            (int) taggedLine.getEndX() + "," +
+                            (int) taggedLine.getStartY() + "," +
+                            (int) taggedLine.getEndY() + "," +
+                            taggedLine.timeStart + ",");
                     if (taggedLine.tag.isEmpty()) {
                         found: {
                             for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
                                 if (isInRectangle(taggedLine.asLine(), taggedRectangle.rect)) {
-                                    writer.print(taggedLine.timeEnd + ",");
-                                    writer.println(taggedRectangle.tag);
+                                    writer.println(taggedLine.timeEnd + "," +
+                                            taggedRectangle.tag);
                                     break found;
                                 }
                             }
                             writer.println(taggedLine.timeEnd);
                         }
                     } else {
-                        writer.print(taggedLine.timeEnd + ",");
-                        writer.println(taggedLine.tag);
+                        writer.println(taggedLine.timeEnd + "," +
+                                taggedLine.tag);
                     }
                 }
 
@@ -763,13 +785,15 @@ public class RootLayoutController implements Initializable {
             return;
         }
         double ratio = 0.1;
-        CubicCurve curve1 = (CubicCurve) curves.get(0),
-                curve2 = (CubicCurve) curves.get(1),
-                curve3;
-        double angle12 = GT.angle(curve1, curve2);
-        double angle23;
-        double theta12 = (Math.PI - Math.abs(angle12)) / 2;
-        double theta23;
+        
+        CubicCurve curve1, curve2, curve3;
+        double angle12, angle23, theta12, theta23;
+        
+        curve1 = (CubicCurve) curves.get(0);
+        curve2 = (CubicCurve) curves.get(1);
+        
+        angle12 = GT.angle(curve1, curve2);
+        theta12 = (Math.PI - Math.abs(angle12)) / 2;
         
         GT.scale(curve1, ratio);
         if (angle12 < 0) {
@@ -817,6 +841,51 @@ public class RootLayoutController implements Initializable {
     }
     
     /**
+     * Add arrow image on cubic curve group.
+     * @param targetGroup 
+     */
+    private void addArrows(Group targetGroup) {
+        ObservableList<Node> curves = targetGroup.getChildren();
+        ObservableList<Node> arrows = arrowGroup.getChildren();
+        curves.stream().map((node) -> (CubicCurve) node).forEach((curve) -> {
+//            arrows.add(new Arrow(curve, 0.25f));
+            arrows.add(new Arrow(curve, 0.5f));
+//            arrows.add(new Arrow(curve, 0.75f));
+        });
+    }
+    
+    /**
+     * Add circles to mark the start and the end of the curve.
+     * @param targetGroup 
+     */
+    private void addCircles(Group targetGroup) {
+        ObservableList<Node> curves = targetGroup.getChildren();
+        ObservableList<Node> circles = circleGroup.getChildren();
+        double radius = 10d;
+        
+        CubicCurve firstCurve = (CubicCurve) curves.get(0);
+        Circle firstCircle = new Circle(firstCurve.getStartX(), firstCurve.getStartY(), radius);
+        firstCircle.setStroke(Color.GREEN);
+        firstCircle.setFill(Color.LIGHTCORAL);
+        circles.add(firstCircle);
+        
+        curves.stream().map((node) -> (CubicCurve) node)
+                .map((curve) -> new Circle(curve.getEndX(), curve.getEndY(), radius))
+                .map((circle) -> {
+            circle.setStroke(Color.GREEN);
+            return circle;
+        }).map((circle) -> {
+            circle.setFill(Color.LIGHTBLUE);
+            return circle;
+        }).forEach((circle) -> {
+            circles.add(circle);
+        });
+        
+        Circle lastCircle = (Circle) circles.get(circles.size() - 1);
+        lastCircle.setFill(Color.LIGHTGREEN);
+    }
+    
+    /**
      * Clear backup.
      */
     public void clearBackup() {
@@ -842,6 +911,8 @@ public class RootLayoutController implements Initializable {
         taggedRectangleBackup = FXCollections.observableArrayList();
         lineSequenceGroup = new Group();
         drawingSequenceGroup = new Group();
+        arrowGroup = new Group();
+        circleGroup = new Group();
         canvas = new Canvas();
         rect = new Rectangle();
         rect.setFill(null);
@@ -856,13 +927,13 @@ public class RootLayoutController implements Initializable {
      * Initialize ChangeListener for Line Label menu and Drawing Sequence menu.
      */
     private void initCheckMenuItem() {
-        lineSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
-            if (isSelected) {
-                mainGroup.getChildren().add(lineSequenceGroup);
-            } else {
-                mainGroup.getChildren().remove(lineSequenceGroup);
-            }
-        });
+//        lineSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+//            if (isSelected) {
+//                mainGroup.getChildren().add(lineSequenceGroup);
+//            } else {
+//                mainGroup.getChildren().remove(lineSequenceGroup);
+//            }
+//        });
         lineLabelMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
             if (isSelected) {
                 mainGroup.getChildren().add(lineLabelGroup);
@@ -873,8 +944,12 @@ public class RootLayoutController implements Initializable {
         drawingSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
             if (isSelected) {
                 mainGroup.getChildren().add(drawingSequenceGroup);
+                mainGroup.getChildren().add(arrowGroup);
+                mainGroup.getChildren().add(circleGroup);
             } else {
                 mainGroup.getChildren().remove(drawingSequenceGroup);
+                mainGroup.getChildren().remove(arrowGroup);
+                mainGroup.getChildren().remove(circleGroup);
             }
         });
     }

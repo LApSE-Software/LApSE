@@ -48,7 +48,7 @@
                         <HBox alignment="CENTER_RIGHT" spacing="5.0">
                            <children>
                               <Button mnemonicParsing="false" onAction="#tag" prefWidth="60.0" text="Tag" />
-                              <Button mnemonicParsing="false" onAction="#cancel" prefWidth="60.0" text="Cancel" />
+                              <Button cancelButton="true" mnemonicParsing="false" onAction="#cancel" prefWidth="60.0" text="Cancel" />
                            </children>
                            <padding>
                               <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />

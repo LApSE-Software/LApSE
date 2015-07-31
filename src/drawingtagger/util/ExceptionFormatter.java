@@ -34,6 +34,12 @@ public class ExceptionFormatter {
      * @return 
      */
     public static String format(Exception ex) {
-        return ex.toString() + ": " + ex.getStackTrace()[0].toString();
+        StringBuilder builder = new StringBuilder(500);
+        for (StackTraceElement trace : ex.getStackTrace()) {
+            builder.append(trace.toString());
+            builder.append("\r\n");
+        }
+        builder.delete(builder.length() - 2, builder.length());
+        return builder.toString();
     }
 }

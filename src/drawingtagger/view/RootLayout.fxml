@@ -46,18 +46,12 @@
             <Menu mnemonicParsing="false" text="View">
               <items>
                   <CheckMenuItem fx:id="lineLabelMenu" mnemonicParsing="false" selected="true" text="Line Label" />
-                  <CheckMenuItem fx:id="lineSequenceMenu" disable="true" mnemonicParsing="false" text="Line Sequence" />
                   <CheckMenuItem fx:id="drawingSequenceMenu" mnemonicParsing="false" text="Drawing Sequence" />
-              </items>
-            </Menu>
-            <Menu mnemonicParsing="false" text="Tools">
-              <items>
-                <MenuItem mnemonicParsing="false" onAction="#animateSequence" text="Animate Sequence" />
               </items>
             </Menu>
         <Menu mnemonicParsing="false" text="Help">
           <items>
-            <MenuItem mnemonicParsing="false" text="About DrawingTagger" />
+            <MenuItem mnemonicParsing="false" onAction="#showProgramInfo" text="About DrawingTagger" />
           </items>
         </Menu>
       </menus>

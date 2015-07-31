@@ -1,6 +1,14 @@
 # DrawingTagger
 A program to tag or label a part of a drawing. The drawing file is generated from TRACE software by Dr. Peter Cheng.
 
+### Binary download
+Will be available soon.
+
+### Building from source
+DrawingTagger uses Log4J 2 for its logging system. Therefore, you need to download Log4J 2 binary [here](http://logging.apache.org/log4j/2.x/download.html), and then add the dependencies listed below to the project:
+- log4j-api-2.3.jar
+- log4j-core-2.3.jar
+
 ### File format
 The bare minimum of the file consists of an indicator ```<<Extracted_Lines>>``` followed by the line coordinates. The format for the line coordinates are as follows:
 ```
@@ -24,11 +32,6 @@ An example of TRACE file would be something like these:
 4,1883,1889,129,130,1907,2125,Hash
 5,349,468,293,295,5344,5891,AppleTree
 ```
-
-### Building from source
-DrawingTagger uses Log4J 2 for its logging system. Therefore, you need to download Log4J 2 binary [here](http://logging.apache.org/log4j/2.x/download.html), and then add the dependencies listed below to the project:
-- log4j-api-2.3.jar
-- log4j-core-2.3.jar
 
 ### License
 ```
