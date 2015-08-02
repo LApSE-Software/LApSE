@@ -60,6 +60,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.image.Image;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
@@ -192,6 +193,8 @@ public class RootLayoutController implements Initializable {
         alert.setHeaderText("DrawingTagger Version 0.1.0");
         alert.setContentText("Copyright \u24D2 Dr Unaizah Hanum binti Obaidellah\r\n\r\n"
                 + "Author: Burhanuddin Baharuddin");
+        Stage alertStage = (Stage) alert.getDialogPane().getScene().getWindow();
+        alertStage.getIcons().add(mainApp.getPrimaryStage().getIcons().get(0));
         alert.show();
     }
     
@@ -609,8 +612,10 @@ public class RootLayoutController implements Initializable {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("Tagging.fxml"));
         try {
             Parent root = loader.load();
+            
             Stage stage = new Stage();
             stage.setTitle("Tagging");
+            stage.getIcons().add(mainApp.getPrimaryStage().getIcons().get(0));
             stage.initModality(Modality.WINDOW_MODAL);
             stage.initOwner(mainApp.getPrimaryStage());
             Scene scene = new Scene(root);
@@ -848,9 +853,7 @@ public class RootLayoutController implements Initializable {
         ObservableList<Node> curves = targetGroup.getChildren();
         ObservableList<Node> arrows = arrowGroup.getChildren();
         curves.stream().map((node) -> (CubicCurve) node).forEach((curve) -> {
-//            arrows.add(new Arrow(curve, 0.25f));
             arrows.add(new Arrow(curve, 0.5f));
-//            arrows.add(new Arrow(curve, 0.75f));
         });
     }
     

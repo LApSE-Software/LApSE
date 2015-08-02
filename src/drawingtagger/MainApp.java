@@ -37,6 +37,7 @@ import javafx.collections.ObservableMap;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -175,6 +176,7 @@ public class MainApp extends Application {
             Scene scene = new Scene(root);
             
             primaryStage.setTitle(TITLE);
+            primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("style/icon.png")));
             primaryStage.setMaximized(true);
             primaryStage.setScene(scene);
             
