@@ -779,6 +779,8 @@ public class RootLayoutController implements Initializable {
         lineLabelGroup.getChildren().clear();
         lineLabelGroup.getChildren().add(new Text());   // dummy
         drawingSequenceGroup.getChildren().clear();
+        arrowGroup.getChildren().clear();
+        circleGroup.getChildren().clear();
     }
     
     /**
