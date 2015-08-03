@@ -1,5 +1,5 @@
 # PROLApSE
-PROLApSE (PROtocoL Annotation SystEm) is a software to tag or label a part of a drawing. The drawing file is generated from TRACE software by Dr. Peter Cheng.
+The Protocol Annotation System (PROLApSE) is a software to tag or label a part of a drawing. The drawing file is generated from TRACE software by Dr. Peter Cheng.
 
 ### Binary download
 Will be available soon.
