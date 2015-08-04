@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package drawingtagger.view;
+package lapse.view;
 
-import drawingtagger.util.FileChooserType;
-import drawingtagger.MainApp;
-import drawingtagger.model.TaggedLine;
-import drawingtagger.model.TaggedRectangle;
-import drawingtagger.shape.Arrow;
-import drawingtagger.util.ExceptionFormatter;
-import drawingtagger.util.GT;
-import drawingtagger.util.TemporaryDataHolder;
+import lapse.util.FileChooserType;
+import lapse.MainApp;
+import lapse.model.TaggedLine;
+import lapse.model.TaggedRectangle;
+import lapse.shape.Arrow;
+import lapse.util.ExceptionFormatter;
+import lapse.util.GT;
+import lapse.util.TemporaryDataHolder;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -60,7 +60,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.image.Image;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
@@ -189,8 +188,8 @@ public class RootLayoutController implements Initializable {
     @FXML
     private void showProgramInfo(ActionEvent event) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("About DrawingTagger");
-        alert.setHeaderText("DrawingTagger Version 0.1.0");
+        alert.setTitle("About LApSE");
+        alert.setHeaderText("LApSE version 0.1.0");
         alert.setContentText("Copyright \u24D2 Dr Unaizah Hanum binti Obaidellah\r\n\r\n"
                 + "Author: Burhanuddin Baharuddin");
         Stage alertStage = (Stage) alert.getDialogPane().getScene().getWindow();

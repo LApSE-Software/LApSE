@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package drawingtagger.shape;
+package lapse.shape;
 
 import javafx.geometry.Point2D;
 import javafx.scene.paint.Color;
@@ -40,7 +40,7 @@ public class Arrow extends Polygon {
     Rotate rotateZ;
     
     /**
-     * Creates empty instance of arrow.
+     * Creates new instance of arrow with default arrow shape.
      * @param curve
      * @param t 
      */
@@ -49,7 +49,7 @@ public class Arrow extends Polygon {
     }
     
     /**
-     * Create new instance of arrow.
+     * Create new instance of arrow with custom shape.
      * @param curve
      * @param t
      * @param arg0 

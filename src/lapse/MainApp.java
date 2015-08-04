@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package drawingtagger;
+package lapse;
 
-import drawingtagger.model.TaggedLine;
-import drawingtagger.model.TaggedRectangle;
-import drawingtagger.util.ExceptionFormatter;
-import drawingtagger.view.RootLayoutController;
+import lapse.model.TaggedLine;
+import lapse.model.TaggedRectangle;
+import lapse.util.ExceptionFormatter;
+import lapse.view.RootLayoutController;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -49,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 public class MainApp extends Application {
     
     private static final Logger logger = LogManager.getLogger();
-    public static final String TITLE = "Drawing Tagger";
+    public static final String TITLE = "LApSE";
     
     private Stage primaryStage;
     

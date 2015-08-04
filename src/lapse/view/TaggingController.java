@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package drawingtagger.view;
+package lapse.view;
 
-import drawingtagger.MainApp;
-import drawingtagger.model.TaggedRectangle;
+import lapse.MainApp;
+import lapse.model.TaggedRectangle;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.collections.ObservableList;
