@@ -1,2 +1,2 @@
 List of assets in this folder:
-icon.png
+lapse_64x64.png

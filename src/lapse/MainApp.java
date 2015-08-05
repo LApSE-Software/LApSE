@@ -176,7 +176,7 @@ public class MainApp extends Application {
             Scene scene = new Scene(root);
             
             primaryStage.setTitle(TITLE);
-            primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("style/icon.png")));
+            primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("style/lapse_64x64.png")));
             primaryStage.setMaximized(true);
             primaryStage.setScene(scene);
             
