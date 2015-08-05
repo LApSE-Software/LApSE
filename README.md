@@ -2,7 +2,7 @@
 The Protocol Annotation System (LApSE) is a software to tag or label a part of a drawing. The drawing file is generated from TRACE software by Dr. Peter Cheng.
 
 ### Binary download
-Will be available soon.
+Latest build: (LApSE version 0.1.0)[https://github.com/burhanloey/LApSE/releases/download/0.1.0/lapse-0.1.0-setup.exe]
 
 ### Building from source
 LApSE uses Log4J 2 for its logging system. Therefore, you need to download Log4J 2 binary from [here](http://logging.apache.org/log4j/2.x/download.html), and then add the dependencies listed below to the project:
