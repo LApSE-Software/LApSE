@@ -1,5 +1,5 @@
 # LApSE
-The Protocol Annotation System (LApSE) is a software to tag or label a part of a drawing. The drawing file is generated from TRACE software by Dr. Peter Cheng.
+The Protocol Annotation System (LApSE) is a software to tag or label several parts of a drawing and provide analysis on how the drawing is constructed. The drawing file is generated from TRACE software by Dr. Peter Cheng.
 
 ### Binary download
 [lapse-0.1.0-setup.exe](https://github.com/burhanloey/LApSE/releases/download/0.1.0/lapse-0.1.0-setup.exe)
