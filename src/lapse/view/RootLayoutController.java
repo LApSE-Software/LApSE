@@ -48,6 +48,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
@@ -64,6 +65,7 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -75,6 +77,7 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import lapse.util.ZoomHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -221,6 +224,8 @@ public class RootLayoutController implements Initializable {
         mainApp.clearData();
         lineSequenceGroup.getChildren().clear();
         lineLabelGroup.getChildren().clear();
+        arrowGroup.getChildren().clear();
+        circleGroup.getChildren().clear();
         drawingSequenceGroup.getChildren().clear();
         lineLabelBackup.clear();
         taggedRectangleBackup.clear();
@@ -616,7 +621,7 @@ public class RootLayoutController implements Initializable {
             stage.initOwner(mainApp.getPrimaryStage());
             Scene scene = new Scene(root);
             stage.setScene(scene);
-            stage.setResizable(false);
+//            stage.setResizable(false);
             
             TaggingController controller = loader.getController();
             controller.setRootLayout(this);
@@ -928,7 +933,28 @@ public class RootLayoutController implements Initializable {
         rect.setStroke(Color.RED);
         minWidth = 0;
         minHeight = 0;
+        
         initCheckMenuItem();
+    }
+    
+    /**
+     * Initialize zoom handling for scroll pane.
+     */
+    private void initZoomHandling() {
+        scrollPane.setContent(drawingPane);
+        scrollPane.addEventFilter(ScrollEvent.ANY, new ZoomHandler(mainGroup, drawingPane, scrollPane));
+        scrollPane.viewportBoundsProperty().addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
+            drawingPane.setPrefSize(
+                    Math.max(mainGroup.getBoundsInParent().getMaxX(), newValue.getWidth()),
+                    Math.max(mainGroup.getBoundsInParent().getMaxY(), newValue.getHeight())
+            );
+        });
+        mainGroup.boundsInParentProperty().addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
+            drawingPane.setPrefSize(
+                    Math.max(newValue.getMaxX(), scrollPane.getViewportBounds().getWidth()),
+                    Math.max(newValue.getMaxY(), scrollPane.getViewportBounds().getHeight())
+            );
+        });
     }
     
     /**
@@ -977,6 +1003,8 @@ public class RootLayoutController implements Initializable {
                 redoMenu.setDisable(true);
             }
         });
+        
+        initZoomHandling();
     }
     
 }
