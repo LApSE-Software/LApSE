@@ -48,6 +48,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
@@ -64,6 +65,7 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -75,6 +77,7 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import lapse.util.ZoomHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -107,8 +110,6 @@ public class RootLayoutController implements Initializable {
     private MenuItem redoMenu;
     @FXML
     private CheckMenuItem drawingSequenceMenu;
-//    @FXML
-//    private CheckMenuItem lineSequenceMenu;
     @FXML
     private CheckMenuItem lineLabelMenu;
     
@@ -223,6 +224,8 @@ public class RootLayoutController implements Initializable {
         mainApp.clearData();
         lineSequenceGroup.getChildren().clear();
         lineLabelGroup.getChildren().clear();
+        arrowGroup.getChildren().clear();
+        circleGroup.getChildren().clear();
         drawingSequenceGroup.getChildren().clear();
         lineLabelBackup.clear();
         taggedRectangleBackup.clear();
@@ -467,9 +470,6 @@ public class RootLayoutController implements Initializable {
         if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
             mainGroup.getChildren().add(lineLabelGroup);
         }
-//        if (lineSequenceMenu.selectedProperty().getValue()) {    // if lineSequenceMenu is selected
-//            mainGroup.getChildren().add(lineSequenceGroup);
-//        }
         if (drawingSequenceMenu.selectedProperty().getValue()) {  // if drawingSequenceMenu is selected
             mainGroup.getChildren().add(drawingSequenceGroup);
             mainGroup.getChildren().add(arrowGroup);
@@ -598,8 +598,10 @@ public class RootLayoutController implements Initializable {
     private void drawLines() {
         gc.setStroke(Color.BLACK);
         mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
-            gc.strokeLine(taggedLine.getStartX(), taggedLine.getStartY(),
-                    taggedLine.getEndX(), taggedLine.getEndY());
+            gc.strokeLine(taggedLine.getStartX(),
+                    taggedLine.getStartY(),
+                    taggedLine.getEndX(),
+                    taggedLine.getEndY());
         });
     }
     
@@ -619,7 +621,7 @@ public class RootLayoutController implements Initializable {
             stage.initOwner(mainApp.getPrimaryStage());
             Scene scene = new Scene(root);
             stage.setScene(scene);
-            stage.setResizable(false);
+//            stage.setResizable(false);
             
             TaggingController controller = loader.getController();
             controller.setRootLayout(this);
@@ -863,6 +865,10 @@ public class RootLayoutController implements Initializable {
      * @param targetGroup 
      */
     private void addCircles(Group targetGroup) {
+        if (targetGroup.getChildren().size() == 0) {
+            return;
+        }
+        
         ObservableList<Node> curves = targetGroup.getChildren();
         ObservableList<Node> circles = circleGroup.getChildren();
         double radius = 10d;
@@ -873,17 +879,20 @@ public class RootLayoutController implements Initializable {
         firstCircle.setFill(Color.LIGHTCORAL);
         circles.add(firstCircle);
         
-        curves.stream().map((node) -> (CubicCurve) node)
+        curves.stream()
+                .map((node) -> (CubicCurve) node)
                 .map((curve) -> new Circle(curve.getEndX(), curve.getEndY(), radius))
                 .map((circle) -> {
-            circle.setStroke(Color.GREEN);
-            return circle;
-        }).map((circle) -> {
-            circle.setFill(Color.LIGHTBLUE);
-            return circle;
-        }).forEach((circle) -> {
-            circles.add(circle);
-        });
+                    circle.setStroke(Color.GREEN);
+                    return circle;
+                })
+                .map((circle) -> {
+                    circle.setFill(Color.LIGHTBLUE);
+                    return circle;
+                })
+                .forEach((circle) -> {
+                    circles.add(circle);
+                });
         
         Circle lastCircle = (Circle) circles.get(circles.size() - 1);
         lastCircle.setFill(Color.LIGHTGREEN);
@@ -924,20 +933,34 @@ public class RootLayoutController implements Initializable {
         rect.setStroke(Color.RED);
         minWidth = 0;
         minHeight = 0;
+        
         initCheckMenuItem();
+    }
+    
+    /**
+     * Initialize zoom handling for scroll pane.
+     */
+    private void initZoomHandling() {
+        scrollPane.setContent(drawingPane);
+        scrollPane.addEventFilter(ScrollEvent.ANY, new ZoomHandler(mainGroup, drawingPane, scrollPane));
+        scrollPane.viewportBoundsProperty().addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
+            drawingPane.setPrefSize(
+                    Math.max(mainGroup.getBoundsInParent().getMaxX(), newValue.getWidth()),
+                    Math.max(mainGroup.getBoundsInParent().getMaxY(), newValue.getHeight())
+            );
+        });
+        mainGroup.boundsInParentProperty().addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
+            drawingPane.setPrefSize(
+                    Math.max(newValue.getMaxX(), scrollPane.getViewportBounds().getWidth()),
+                    Math.max(newValue.getMaxY(), scrollPane.getViewportBounds().getHeight())
+            );
+        });
     }
     
     /**
      * Initialize ChangeListener for Line Label menu and Drawing Sequence menu.
      */
     private void initCheckMenuItem() {
-//        lineSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
-//            if (isSelected) {
-//                mainGroup.getChildren().add(lineSequenceGroup);
-//            } else {
-//                mainGroup.getChildren().remove(lineSequenceGroup);
-//            }
-//        });
         lineLabelMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
             if (isSelected) {
                 mainGroup.getChildren().add(lineLabelGroup);
@@ -980,6 +1003,8 @@ public class RootLayoutController implements Initializable {
                 redoMenu.setDisable(true);
             }
         });
+        
+        initZoomHandling();
     }
     
 }
