@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "LApSE"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.1.1-alpha"
 #define MyAppPublisher "Burhanuddin Baharuddin"
 #define MyAppURL "https://github.com/burhanloey/LApSE"
 #define MyAppExeName "LApSE.exe"
@@ -21,7 +21,7 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-OutputBaseFilename=lapse-0.1.0-setup
+OutputBaseFilename=lapse-0.1.1-alpha-setup
 Compression=lzma
 SolidCompression=yes
 
