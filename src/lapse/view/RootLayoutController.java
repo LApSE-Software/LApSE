@@ -190,7 +190,7 @@ public class RootLayoutController implements Initializable {
     private void showProgramInfo(ActionEvent event) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About LApSE");
-        alert.setHeaderText("LApSE version 0.1.0");
+        alert.setHeaderText("LApSE version 0.1.1-alpha");
         alert.setContentText("Copyright \u24D2 Dr Unaizah Hanum binti Obaidellah\r\n\r\n"
                 + "Author: Burhanuddin Baharuddin");
         Stage alertStage = (Stage) alert.getDialogPane().getScene().getWindow();
@@ -302,8 +302,8 @@ public class RootLayoutController implements Initializable {
             tempDataHolder.retrieveTempData("taggedLines").stream()
                     .map((line) -> loadLineFromString(line))
                     .forEach((taggedLine) -> {
-                mainApp.getTaggedLines().add(taggedLine);
-            });
+                        mainApp.getTaggedLines().add(taggedLine);
+                    });
         }
     }
     
@@ -313,16 +313,17 @@ public class RootLayoutController implements Initializable {
     private void generateLinesAndLabels() {
         ObservableList<TaggedLine> taggedLines = mainApp.getTaggedLines();
         Group lineLabelFromFile = new Group();
-        taggedLines.stream().forEach((taggedLine) -> {
-            Point2D ptA = new Point2D(taggedLine.getStartX(), taggedLine.getStartY());
-            Point2D midPoint = ptA.midpoint(taggedLine.getEndX(), taggedLine.getEndY());
-            loadSequencePoint(lineSequenceGroup, midPoint);
-            if (!taggedLine.tag.isEmpty()) {    // if tag exists
-                Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
-                text.setFill(Color.RED);
-                lineLabelFromFile.getChildren().add(text);
-            }
-        });
+        taggedLines.stream()
+                .forEach((taggedLine) -> {
+                    Point2D ptA = new Point2D(taggedLine.getStartX(), taggedLine.getStartY());
+                    Point2D midPoint = ptA.midpoint(taggedLine.getEndX(), taggedLine.getEndY());
+                    loadSequencePoint(lineSequenceGroup, midPoint);
+                    if (!taggedLine.tag.isEmpty()) {    // if tag exists
+                        Text text = new Text(midPoint.getX(), midPoint.getY(), taggedLine.tag);
+                        text.setFill(Color.RED);
+                        lineLabelFromFile.getChildren().add(text);
+                    }
+                });
         loadSequencePoint(lineSequenceGroup, null);    // remove last curve
         makeCurves(lineSequenceGroup);
         lineLabelGroup.getChildren().add(lineLabelFromFile);
@@ -359,10 +360,11 @@ public class RootLayoutController implements Initializable {
      */
     private Point2D calculateMidPointOfLineGroup(ObservableList<TaggedLine> lines) {
         ObservableList<Point2D> midPoints = FXCollections.observableArrayList();
-        lines.stream().forEach((line) -> {
-            midPoints.add(new Point2D(line.getStartX(), line.getStartY())
-                    .midpoint(line.getEndX(), line.getEndY()));
-        });
+        lines.stream()
+                .forEach((line) -> {
+                    midPoints.add(new Point2D(line.getStartX(), line.getStartY())
+                            .midpoint(line.getEndX(), line.getEndY()));
+                });
         
         double totalX = 0.0, totalY = 0.0;
         for (Point2D pt : midPoints) {
@@ -448,12 +450,13 @@ public class RootLayoutController implements Initializable {
     private void findMinimumCanvasSize() {
         minWidth = 0;
         minHeight = 0;
-        mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
-            int xPref = (int) Math.max(taggedLine.getStartX(), taggedLine.getEndX());
-            int yPref = (int) Math.max(taggedLine.getStartY(), taggedLine.getEndY());
-            minWidth = Math.max(minWidth, xPref);
-            minHeight = Math.max(minHeight, yPref);
-        });
+        mainApp.getTaggedLines().stream()
+                .forEach((taggedLine) -> {
+                    int xPref = (int) Math.max(taggedLine.getStartX(), taggedLine.getEndX());
+                    int yPref = (int) Math.max(taggedLine.getStartY(), taggedLine.getEndY());
+                    minWidth = Math.max(minWidth, xPref);
+                    minHeight = Math.max(minHeight, yPref);
+                });
     }
     
     /**
@@ -463,10 +466,12 @@ public class RootLayoutController implements Initializable {
         findMinimumCanvasSize();
         canvas.setWidth(minWidth + GAP);
         canvas.setHeight(minHeight + GAP);
+        
         mainGroup.getChildren().clear();
         mainGroup.getChildren().add(canvas);
         drawingPane.getChildren().clear();
         drawingPane.getChildren().add(mainGroup);
+        
         if (lineLabelMenu.selectedProperty().getValue()) {  // if lineLabelMenu is selected
             mainGroup.getChildren().add(lineLabelGroup);
         }
@@ -597,12 +602,13 @@ public class RootLayoutController implements Initializable {
      */
     private void drawLines() {
         gc.setStroke(Color.BLACK);
-        mainApp.getTaggedLines().stream().forEach((taggedLine) -> {
-            gc.strokeLine(taggedLine.getStartX(),
-                    taggedLine.getStartY(),
-                    taggedLine.getEndX(),
-                    taggedLine.getEndY());
-        });
+        mainApp.getTaggedLines().stream()
+                .forEach((taggedLine) -> {
+                    gc.strokeLine(taggedLine.getStartX(),
+                                    taggedLine.getStartY(),
+                                    taggedLine.getEndX(),
+                                    taggedLine.getEndY());
+                });
     }
     
     /**
@@ -621,7 +627,6 @@ public class RootLayoutController implements Initializable {
             stage.initOwner(mainApp.getPrimaryStage());
             Scene scene = new Scene(root);
             stage.setScene(scene);
-//            stage.setResizable(false);
             
             TaggingController controller = loader.getController();
             controller.setRootLayout(this);
@@ -675,9 +680,10 @@ public class RootLayoutController implements Initializable {
     private void saveFile() {
         if (file != null) {
             try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file)))) {
-                mainApp.getBeforeLines().stream().forEach((line) -> {
-                    writer.println(line);
-                });
+                mainApp.getBeforeLines().stream()
+                        .forEach((line) -> {
+                            writer.println(line);
+                        });
 
                 for (TaggedLine taggedLine : mainApp.getTaggedLines()) {
                     writer.print(taggedLine.id + "," +
@@ -686,6 +692,7 @@ public class RootLayoutController implements Initializable {
                             (int) taggedLine.getStartY() + "," +
                             (int) taggedLine.getEndY() + "," +
                             taggedLine.timeStart + ",");
+                    
                     if (taggedLine.tag.isEmpty()) {
                         found: {
                             for (TaggedRectangle taggedRectangle : mainApp.getTaggedRectangles()) {
@@ -703,9 +710,10 @@ public class RootLayoutController implements Initializable {
                     }
                 }
 
-                mainApp.getAfterLines().stream().forEach((line) -> {
-                    writer.println(line);
-                });
+                mainApp.getAfterLines().stream()
+                        .forEach((line) -> {
+                            writer.println(line);
+                        });
 
                 loadFile(file); // load again to refresh
             } catch (IOException ex) {
@@ -775,8 +783,8 @@ public class RootLayoutController implements Initializable {
         mainApp.getTaggedLines().stream()
                 .filter((taggedLine) -> (!taggedLine.tag.isEmpty()))
                 .forEach((taggedLine) -> {
-            taggedLine.tag = "";
-        });
+                    taggedLine.tag = "";
+                });
         lineLabelGroup.getChildren().clear();
         lineLabelGroup.getChildren().add(new Text());   // dummy
         drawingSequenceGroup.getChildren().clear();
@@ -855,9 +863,11 @@ public class RootLayoutController implements Initializable {
     private void addArrows(Group targetGroup) {
         ObservableList<Node> curves = targetGroup.getChildren();
         ObservableList<Node> arrows = arrowGroup.getChildren();
-        curves.stream().map((node) -> (CubicCurve) node).forEach((curve) -> {
-            arrows.add(new Arrow(curve, 0.5f));
-        });
+        curves.stream()
+                .map((node) -> (CubicCurve) node)
+                .forEach((curve) -> {
+                    arrows.add(new Arrow(curve, 0.5f));
+                });
     }
     
     /**
@@ -943,42 +953,46 @@ public class RootLayoutController implements Initializable {
     private void initZoomHandling() {
         scrollPane.setContent(drawingPane);
         scrollPane.addEventFilter(ScrollEvent.ANY, new ZoomHandler(mainGroup, drawingPane, scrollPane));
-        scrollPane.viewportBoundsProperty().addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
-            drawingPane.setPrefSize(
-                    Math.max(mainGroup.getBoundsInParent().getMaxX(), newValue.getWidth()),
-                    Math.max(mainGroup.getBoundsInParent().getMaxY(), newValue.getHeight())
-            );
-        });
-        mainGroup.boundsInParentProperty().addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
-            drawingPane.setPrefSize(
-                    Math.max(newValue.getMaxX(), scrollPane.getViewportBounds().getWidth()),
-                    Math.max(newValue.getMaxY(), scrollPane.getViewportBounds().getHeight())
-            );
-        });
+        scrollPane.viewportBoundsProperty()
+                .addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
+                    drawingPane.setPrefSize(
+                            Math.max(mainGroup.getBoundsInParent().getMaxX(), newValue.getWidth()),
+                            Math.max(mainGroup.getBoundsInParent().getMaxY(), newValue.getHeight())
+                    );
+                });
+        mainGroup.boundsInParentProperty()
+                .addListener((ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) -> {
+                    drawingPane.setPrefSize(
+                            Math.max(newValue.getMaxX(), scrollPane.getViewportBounds().getWidth()),
+                            Math.max(newValue.getMaxY(), scrollPane.getViewportBounds().getHeight())
+                    );
+                });
     }
     
     /**
      * Initialize ChangeListener for Line Label menu and Drawing Sequence menu.
      */
     private void initCheckMenuItem() {
-        lineLabelMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
-            if (isSelected) {
-                mainGroup.getChildren().add(lineLabelGroup);
-            } else {
-                mainGroup.getChildren().remove(lineLabelGroup);
-            }
-        });
-        drawingSequenceMenu.selectedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
-            if (isSelected) {
-                mainGroup.getChildren().add(drawingSequenceGroup);
-                mainGroup.getChildren().add(arrowGroup);
-                mainGroup.getChildren().add(circleGroup);
-            } else {
-                mainGroup.getChildren().remove(drawingSequenceGroup);
-                mainGroup.getChildren().remove(arrowGroup);
-                mainGroup.getChildren().remove(circleGroup);
-            }
-        });
+        lineLabelMenu.selectedProperty()
+                .addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+                    if (isSelected) {
+                        mainGroup.getChildren().add(lineLabelGroup);
+                    } else {
+                        mainGroup.getChildren().remove(lineLabelGroup);
+                    }
+                });
+        drawingSequenceMenu.selectedProperty()
+                .addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean isSelected) -> {
+                    if (isSelected) {
+                        mainGroup.getChildren().add(drawingSequenceGroup);
+                        mainGroup.getChildren().add(arrowGroup);
+                        mainGroup.getChildren().add(circleGroup);
+                    } else {
+                        mainGroup.getChildren().remove(drawingSequenceGroup);
+                        mainGroup.getChildren().remove(arrowGroup);
+                        mainGroup.getChildren().remove(circleGroup);
+                    }
+                });
     }
     
     /**
@@ -989,13 +1003,14 @@ public class RootLayoutController implements Initializable {
      */
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
-        lineLabelGroup.getChildren().addListener((ListChangeListener.Change<? extends Node> c) -> {
-            if (lineLabelGroup.getChildren().size() > 1) {  // 1 is loaded from file
-                undoMenu.setDisable(false);
-            } else {
-                undoMenu.setDisable(true);
-            }
-        });
+        lineLabelGroup.getChildren()
+                .addListener((ListChangeListener.Change<? extends Node> c) -> {
+                    if (lineLabelGroup.getChildren().size() > 1) {  // 1 is loaded from file
+                        undoMenu.setDisable(false);
+                    } else {
+                        undoMenu.setDisable(true);
+                    }
+                });
         lineLabelBackup.addListener((ListChangeListener.Change<? extends Node> c) -> {
             if (lineLabelBackup.size() > 0) {
                 redoMenu.setDisable(false);

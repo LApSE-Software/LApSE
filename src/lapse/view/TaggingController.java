@@ -101,11 +101,12 @@ public class TaggingController implements Initializable {
                             .midpoint(taggedLine.getEndX(), taggedLine.getEndY()))
                     .map((midPoint) -> new Text(midPoint.getX(), midPoint.getY(), selectedTag))
                     .map((text) -> {
-                text.setFill(Color.BLUE);
-                return text;
-            }).forEach((text) -> {
-                lineLabel.getChildren().add(text);
-            });
+                        text.setFill(Color.BLUE);
+                        return text;
+                    })
+                    .forEach((text) -> {
+                        lineLabel.getChildren().add(text);
+                    });
             root.getLineLabelGroup().add(lineLabel);
             root.clearBackup();
             
