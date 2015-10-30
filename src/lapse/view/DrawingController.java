@@ -94,8 +94,7 @@ public class DrawingController implements Initializable {
     @FXML
     private ScrollPane scrollPane;
     
-    public MainApp mainApp;
-    
+    private MainApp mainApp;
     private RootLayoutController root;
     private Group mainGroup;
     private Group lineLabelGroup;
@@ -111,6 +110,26 @@ public class DrawingController implements Initializable {
     
     private int minWidth, minHeight;
     private double startX, startY;
+    
+    @Override
+    public void initialize(URL url, ResourceBundle rb) {
+        mainGroup = new Group();
+        lineLabelGroup = new Group();
+        lineLabelBackup = FXCollections.observableArrayList();
+        taggedRectangleBackup = FXCollections.observableArrayList();
+        lineSequenceGroup = new Group();
+        drawingSequenceGroup = new Group();
+        arrowGroup = new Group();
+        circleGroup = new Group();
+        canvas = new Canvas();
+        minWidth = 0;
+        minHeight = 0;
+        
+        rect = new Rectangle();
+        rect.setFill(null);
+        rect.getStrokeDashArray().addAll(5.0);
+        rect.setStroke(Color.RED);
+    }
     
     /**
      * Show that copy of file is allowed indicated by the icon at mouse cursor.
@@ -141,6 +160,28 @@ public class DrawingController implements Initializable {
         }
         event.setDropCompleted(success);
         event.consume();
+    }
+    
+    /**
+     * Allow panning of scroll pane.
+     * @param event 
+     */
+    @FXML
+    private void enablePan(MouseEvent event) {
+        if (event.getButton() == MouseButton.SECONDARY) {
+            scrollPane.setPannable(true);
+        }
+    }
+    
+    /**
+     * Disallow panning of scroll pane.
+     * @param event 
+     */
+    @FXML
+    private void disablePan(MouseEvent event) {
+        if (event.getButton() == MouseButton.SECONDARY) {
+            scrollPane.setPannable(false);
+        }
     }
     
     /**
@@ -375,28 +416,6 @@ public class DrawingController implements Initializable {
     }
     
     /**
-     * Allow panning of scroll pane.
-     * @param event 
-     */
-    @FXML
-    private void enablePan(MouseEvent event) {
-        if (event.getButton() == MouseButton.SECONDARY) {
-            scrollPane.setPannable(true);
-        }
-    }
-    
-    /**
-     * Disallow panning of scroll pane.
-     * @param event 
-     */
-    @FXML
-    private void disablePan(MouseEvent event) {
-        if (event.getButton() == MouseButton.SECONDARY) {
-            scrollPane.setPannable(false);
-        }
-    }
-    
-    /**
      * Called when mouse pressed on canvas.
      * @param event 
      */
@@ -504,6 +523,7 @@ public class DrawingController implements Initializable {
             stage.setScene(scene);
             
             TaggingController controller = loader.getController();
+            controller.setMainApp(mainApp);
             controller.setRootLayout(this);
             controller.setTaggingStage(stage);
             controller.setSelectedImage(rect);
@@ -512,22 +532,6 @@ public class DrawingController implements Initializable {
         } catch (IOException ex) {
             logger.error(ExceptionFormatter.format(ex));
         }
-    }
-    
-    /**
-     * Return main canvas.
-     * @return 
-     */
-    public Canvas getMainCanvas() {
-        return canvas;
-    }
-    
-    /**
-     * Return a list of line label groups.
-     * @return 
-     */
-    public ObservableList<Node> getLineLabelGroup() {
-        return lineLabelGroup.getChildren();
     }
     
     /**
@@ -711,34 +715,6 @@ public class DrawingController implements Initializable {
     }
     
     /**
-     * Called from Animate Sequence menu. Show drawing sequence using animation.
-     * @param event 
-     */
-    @FXML
-    private void animateSequence(ActionEvent event) {
-        // TODO
-    }
-    
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
-        mainGroup = new Group();
-        lineLabelGroup = new Group();
-        lineLabelBackup = FXCollections.observableArrayList();
-        taggedRectangleBackup = FXCollections.observableArrayList();
-        lineSequenceGroup = new Group();
-        drawingSequenceGroup = new Group();
-        arrowGroup = new Group();
-        circleGroup = new Group();
-        canvas = new Canvas();
-        rect = new Rectangle();
-        rect.setFill(null);
-        rect.getStrokeDashArray().addAll(5.0);
-        rect.setStroke(Color.RED);
-        minWidth = 0;
-        minHeight = 0;
-    }
-    
-    /**
      * Initialize zoom handling for scroll pane.
      */
     private void initZoomHandling() {
@@ -829,6 +805,22 @@ public class DrawingController implements Initializable {
      */
     public Group getMainGroup() {
         return mainGroup;
+    }
+    
+    /**
+     * Return main canvas.
+     * @return 
+     */
+    public Canvas getMainCanvas() {
+        return canvas;
+    }
+    
+    /**
+     * Return a list of line label groups.
+     * @return 
+     */
+    public ObservableList<Node> getLineLabelGroup() {
+        return lineLabelGroup.getChildren();
     }
     
 }

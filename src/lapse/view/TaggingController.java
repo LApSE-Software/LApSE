@@ -151,12 +151,20 @@ public class TaggingController implements Initializable {
     }
     
     /**
+     * Make a reference back to MainApp.
+     * 
+     * @param mainApp
+     */
+    public void setMainApp(MainApp mainApp) {
+        this.mainApp = mainApp;
+    }
+    
+    /**
      * Called from root layout to make reference to itself.
      * @param root 
      */
     public void setRootLayout(DrawingController root) {
         this.root = root;
-        this.mainApp = root.mainApp;
     }
     
     /**

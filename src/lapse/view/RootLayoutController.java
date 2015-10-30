@@ -94,7 +94,7 @@ public class RootLayoutController implements Initializable {
             Parent drawing = loader.load();
             
             drawingController = loader.getController();
-//            drawingController.setMainApp(mainApp);
+            drawingController.setMainApp(mainApp);
             drawingController.setRootLayout(this);
             
             drawingPane.getChildren().setAll(drawing);
