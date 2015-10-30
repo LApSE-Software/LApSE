@@ -63,7 +63,7 @@ public class TaggingController implements Initializable {
     private ComboBox<String> tag;
     
     private MainApp mainApp;
-    private RootLayoutController root;
+    private DrawingController root;
     private Stage taggingStage;
     private Canvas mainCanvas;
     private GraphicsContext gc;
@@ -154,7 +154,7 @@ public class TaggingController implements Initializable {
      * Called from root layout to make reference to itself.
      * @param root 
      */
-    public void setRootLayout(RootLayoutController root) {
+    public void setRootLayout(DrawingController root) {
         this.root = root;
         this.mainApp = root.mainApp;
     }
