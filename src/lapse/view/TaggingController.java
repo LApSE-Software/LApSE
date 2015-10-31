@@ -63,7 +63,7 @@ public class TaggingController implements Initializable {
     private ComboBox<String> tag;
     
     private MainApp mainApp;
-    private RootLayoutController root;
+    private DrawingController root;
     private Stage taggingStage;
     private Canvas mainCanvas;
     private GraphicsContext gc;
@@ -101,11 +101,12 @@ public class TaggingController implements Initializable {
                             .midpoint(taggedLine.getEndX(), taggedLine.getEndY()))
                     .map((midPoint) -> new Text(midPoint.getX(), midPoint.getY(), selectedTag))
                     .map((text) -> {
-                text.setFill(Color.BLUE);
-                return text;
-            }).forEach((text) -> {
-                lineLabel.getChildren().add(text);
-            });
+                        text.setFill(Color.BLUE);
+                        return text;
+                    })
+                    .forEach((text) -> {
+                        lineLabel.getChildren().add(text);
+                    });
             root.getLineLabelGroup().add(lineLabel);
             root.clearBackup();
             
@@ -150,12 +151,20 @@ public class TaggingController implements Initializable {
     }
     
     /**
+     * Make a reference back to MainApp.
+     * 
+     * @param mainApp
+     */
+    public void setMainApp(MainApp mainApp) {
+        this.mainApp = mainApp;
+    }
+    
+    /**
      * Called from root layout to make reference to itself.
      * @param root 
      */
-    public void setRootLayout(RootLayoutController root) {
+    public void setRootLayout(DrawingController root) {
         this.root = root;
-        this.mainApp = root.mainApp;
     }
     
     /**
